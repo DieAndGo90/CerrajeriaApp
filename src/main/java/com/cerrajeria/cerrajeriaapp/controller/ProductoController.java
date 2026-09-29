@@ -1,13 +1,12 @@
 package com.cerrajeria.cerrajeriaapp.controller;
 
-import com.cerrajeria.cerrajeriaapp.entity.Producto;
+import com.cerrajeria.cerrajeriaapp.dto.ProductoDTO;
 import com.cerrajeria.cerrajeriaapp.service.ProductoService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/productos")
@@ -20,53 +19,44 @@ public class ProductoController {
     }
 
     @GetMapping
-    public List<Producto> listarProductos(){
+    public List<ProductoDTO> listarProductos(){
         return productoService.listarProductos();
     }
 
     @PostMapping
-    public ResponseEntity<Producto> crearProducto(@Valid @RequestBody Producto producto){
+    public ResponseEntity<ProductoDTO> crearProducto(@Valid @RequestBody ProductoDTO productoDTO){
 
-        Producto productoCreado = productoService.crearProducto(producto);
+        ProductoDTO productoCreado = productoService.crearProducto(productoDTO);
 
         return ResponseEntity.status(201).body(productoCreado);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Producto> buscarPorId(@PathVariable Long id){
+    public ResponseEntity<ProductoDTO> buscarPorId(@PathVariable Long id) {
 
-        Optional<Producto> producto = productoService.buscarPorId(id);
+        ProductoDTO producto = productoService.buscarPorId(id);
 
-        if (producto.isPresent()){
-            return ResponseEntity.ok(producto.get());
-        }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(producto);
     }
 
     @PutMapping("/{id}")
-    public  ResponseEntity<Producto> editarProducto(@PathVariable Long id, @Valid @RequestBody Producto productoActualizado){
+    public  ResponseEntity<ProductoDTO> editarProducto(@PathVariable Long id, @Valid @RequestBody ProductoDTO productoActualizado){
 
-        Optional<Producto> producto = productoService.editarProducto(id, productoActualizado);
+        ProductoDTO producto = productoService.editarProducto(id, productoActualizado);
 
-        if (producto.isPresent()){
-            return ResponseEntity.ok(producto.get());
-        }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(producto);
     }
 
-    @DeleteMapping("{id}")
-    public ResponseEntity<Void>  eliminarProducto(@PathVariable Long id){
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> eliminarProducto(@PathVariable Long id){
 
-        boolean eliminado = productoService.eliminarProducto(id);
+        productoService.eliminarProducto(id);
 
-        if (eliminado){
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/buscar")
-    public List<Producto> buscarPorNombre(@RequestParam String nombre) {
+    public List<ProductoDTO> buscarPorNombre(@RequestParam String nombre) {
         return productoService.buscarPorNombre(nombre);
     }
 

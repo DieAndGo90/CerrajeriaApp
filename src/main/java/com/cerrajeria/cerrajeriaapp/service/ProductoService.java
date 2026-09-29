@@ -1,11 +1,13 @@
 package com.cerrajeria.cerrajeriaapp.service;
 
+import com.cerrajeria.cerrajeriaapp.dto.ProductoDTO;
 import com.cerrajeria.cerrajeriaapp.entity.Producto;
+import com.cerrajeria.cerrajeriaapp.exception.ProductoNoEncontradoException;
 import com.cerrajeria.cerrajeriaapp.repository.ProductoRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ProductoService {
@@ -16,48 +18,90 @@ public class ProductoService {
         this.productoRepository = productoRepository;
     }
 
-    public List<Producto> listarProductos() {
-        return productoRepository.findAll();
-    }
+    public List<ProductoDTO> listarProductos(){
 
-    public Producto crearProducto(Producto producto) {
-        return productoRepository.save(producto);
-    }
+        List<Producto> productos = productoRepository.findAll();
 
-    public Optional<Producto> buscarPorId(Long id) {
-        return productoRepository.findById(id);
-    }
+        List<ProductoDTO> productosDTO = new ArrayList<>();
 
-    public Optional<Producto> editarProducto(Long id, Producto productoActualizado) {
-
-        Optional<Producto> productoExistente = productoRepository.findById(id);
-
-        if (productoExistente.isPresent()) {
-
-            Producto producto = productoExistente.get();
-
-            producto.setNombre(productoActualizado.getNombre());
-            producto.setPrecio(productoActualizado.getPrecio());
-            producto.setStock(productoActualizado.getStock());
-
-            return Optional.of(productoRepository.save(producto));
+        for (Producto producto : productos) {
+            productosDTO.add(convertirADTO(producto));
         }
-        return Optional.empty();
+        return productosDTO;
     }
 
-    public boolean eliminarProducto(Long id) {
+    public ProductoDTO crearProducto(ProductoDTO productoDTO) {
 
-        if (productoRepository.existsById(id)) {
-            productoRepository.deleteById(id);
-            return true;
+        Producto producto = convertirAEntidad(productoDTO);
+
+        Producto productoGuardado = productoRepository.save(producto);
+
+        return convertirADTO(productoGuardado);
+    }
+
+    public ProductoDTO buscarPorId(Long id) {
+
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new ProductoNoEncontradoException(id));
+
+        return convertirADTO(producto);
+    }
+
+    public ProductoDTO editarProducto(Long id, ProductoDTO productoActualizado) {
+
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new ProductoNoEncontradoException(id));
+
+        producto.setNombre(productoActualizado.getNombre());
+        producto.setPrecio(productoActualizado.getPrecio());
+        producto.setStock(productoActualizado.getStock());
+
+        Producto productoGuardado = productoRepository.save(producto);
+
+        return convertirADTO(productoGuardado);
+    }
+
+    public void eliminarProducto(Long id) {
+
+        if (!productoRepository.existsById(id)) {
+            throw new ProductoNoEncontradoException(id);
         }
-        return false;
+        productoRepository.deleteById(id);
     }
 
-    public List<Producto> buscarPorNombre(String nombre) {
-        return productoRepository.findByNombreContainingIgnoreCase(nombre);
+    public List<ProductoDTO> buscarPorNombre(String nombre) {
+
+        List<Producto> productos =
+                productoRepository.findByNombreContainingIgnoreCase(nombre);
+
+        List<ProductoDTO> productosDTO = new ArrayList<>();
+
+        for (Producto producto : productos) {
+            productosDTO.add(convertirADTO(producto));
+        }
+        return productosDTO;
     }
 
+    private ProductoDTO convertirADTO(Producto producto) {
+        ProductoDTO dto = new ProductoDTO();
+
+        dto.setId(producto.getId());
+        dto.setNombre(producto.getNombre());
+        dto.setStock(producto.getStock());
+        dto.setPrecio(producto.getPrecio());
+
+        return dto;
+    }
+
+    private Producto convertirAEntidad(ProductoDTO dto) {
+        Producto producto = new Producto();
+
+        producto.setNombre(dto.getNombre());
+        producto.setStock(dto.getStock());
+        producto.setPrecio(dto.getPrecio());
+
+        return producto;
+    }
 
 
 }
