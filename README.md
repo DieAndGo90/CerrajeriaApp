@@ -2,12 +2,12 @@
 
 Sistema web de gestión para una cerrajería.
 
-El proyecto está siendo desarrollado como una aplicación full stack, comenzando por un backend REST con Spring Boot y MySQL.
+El proyecto está siendo desarrollado como una aplicación full stack. El Backend MVP con Spring Boot y MySQL se encuentra finalizado y probado. El próximo paso será desarrollar el frontend con React.
 
 ## Tecnologías
 
 ### Backend
-- Java
+- Java 17
 - Spring Boot
 - Spring Web
 - Spring Data JPA
@@ -34,6 +34,26 @@ El proyecto está siendo desarrollado como una aplicación full stack, comenzand
 - Uso de DTOs
 - Manejo global de excepciones
 - Respuestas HTTP adecuadas
+
+## Estado del Backend MVP
+
+Backend MVP finalizado y probado.
+
+Se verificaron correctamente:
+
+- Creación de productos
+- Listado de productos
+- Búsqueda por ID
+- Búsqueda por nombre
+- Edición de productos
+- Eliminación de productos
+- Validación de datos
+- Manejo de productos inexistentes
+- Respuestas HTTP adecuadas
+- Persistencia en MySQL
+- Compilación y empaquetado con Maven
+
+La aplicación fue probada mediante Postman y el proyecto compila correctamente con Java 17 mediante Maven (`BUILD SUCCESS`).
 
 ## Producto
 
