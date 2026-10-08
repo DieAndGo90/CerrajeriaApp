@@ -1,0 +1,105 @@
+body {
+  margin: 0;
+  background-color: #f5f6f8;
+  color: #1f2937;
+}
+
+header {
+  background-color: #1f2937;
+  color: white;
+  padding: 20px 32px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+main {
+  padding: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h2 {
+  margin-bottom: 5px;
+}
+
+h3 {
+  margin-top: 0;
+}
+
+form {
+  background-color: white;
+  padding: 20px;
+  margin: 20px 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+form div {
+  margin-bottom: 12px;
+}
+
+label {
+  display: inline-block;
+  width: 80px;
+  font-weight: 600;
+}
+
+input {
+  padding: 8px 10px;
+  border: 1px solid #bbb;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+button {
+  padding: 7px 12px;
+  border: 1px solid #aaa;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: white;
+}
+
+button:hover {
+  background-color: #f0f0f0;
+}
+
+.productos-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  margin-top: 20px;
+}
+
+.productos-tabla th,
+.productos-tabla td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.productos-tabla th {
+  background-color: #e9ecef;
+  font-weight: 600;
+}
+
+.productos-tabla tr:hover {
+  background-color: #f8f9fa;
+}
+
+input[type="number"] {
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.acciones {
+  display: flex;
+  gap: 8px;
+}
