@@ -2,11 +2,16 @@
 
 Sistema web de gestión para una cerrajería.
 
-El proyecto está siendo desarrollado como una aplicación full stack. El Backend MVP con Spring Boot y MySQL se encuentra finalizado y probado. El próximo paso será desarrollar el frontend con React.
+El proyecto está siendo desarrollado como una aplicación full stack con Spring Boot, React y MySQL.
+
+El Backend MVP se encuentra finalizado y probado. El frontend en React ya está integrado con la API REST y permite gestionar productos de punta a punta.
+
+Actualmente el proyecto se encuentra en etapa de mejoras visuales y experiencia de usuario.
 
 ## Tecnologías
 
 ### Backend
+
 - Java 17
 - Spring Boot
 - Spring Web
@@ -17,10 +22,15 @@ El proyecto está siendo desarrollado como una aplicación full stack. El Backen
 - Bean Validation
 
 ### Base de datos
+
 - MySQL
 
 ### Frontend
-- React (próximamente)
+
+- React
+- Vite
+- Fetch API
+- CSS
 
 ## Funcionalidades actuales
 
@@ -74,14 +84,14 @@ Los datos recibidos y enviados por la API se manejan mediante `ProductoDTO`, mie
 
 ## Endpoints
 
-| Método | Endpoint | Descripción |
-|---|---|---|
-| POST | `/productos` | Crear producto |
-| GET | `/productos` | Listar productos |
-| GET | `/productos/{id}` | Buscar producto por ID |
-| GET | `/productos/buscar?nombre=...` | Buscar productos por nombre |
-| PUT | `/productos/{id}` | Editar producto |
-| DELETE | `/productos/{id}` | Eliminar producto |
+| Método | Endpoint                       | Descripción                 |
+| ------ | ------------------------------ | --------------------------- |
+| POST   | `/productos`                   | Crear producto              |
+| GET    | `/productos`                   | Listar productos            |
+| GET    | `/productos/{id}`              | Buscar producto por ID      |
+| GET    | `/productos/buscar?nombre=...` | Buscar productos por nombre |
+| PUT    | `/productos/{id}`              | Editar producto             |
+| DELETE | `/productos/{id}`              | Eliminar producto           |
 
 ## Respuestas HTTP
 
@@ -99,3 +109,4 @@ Base utilizada durante el desarrollo:
 
 ```text
 cerrajeria_db
+```
