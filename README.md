@@ -6,7 +6,7 @@ El proyecto está siendo desarrollado como una aplicación full stack con Spring
 
 El Backend MVP se encuentra finalizado y probado. El frontend en React ya está integrado con la API REST y permite gestionar productos de punta a punta.
 
-Actualmente el proyecto se encuentra en etapa de mejoras visuales y experiencia de usuario.
+El frontend MVP se encuentra integrado y pulido, con una interfaz responsive y manejo visual de los principales estados de la aplicación.
 
 ## Tecnologías
 
@@ -38,8 +38,15 @@ Actualmente el proyecto se encuentra en etapa de mejoras visuales y experiencia 
 - Listar productos
 - Buscar productos por ID
 - Buscar productos por nombre
+- Limpiar búsqueda y volver al inventario completo
 - Editar productos
-- Eliminar productos
+- Cancelar edición
+- Eliminar productos con confirmación
+- Indicador visual de productos sin stock
+- Mensajes de éxito y error
+- Estado de carga
+- Estado vacío cuando no hay resultados
+- Diseño responsive
 - Validación de datos
 - Uso de DTOs
 - Manejo global de excepciones
@@ -64,6 +71,29 @@ Se verificaron correctamente:
 - Compilación y empaquetado con Maven
 
 La aplicación fue probada mediante Postman y el proyecto compila correctamente con Java 17 mediante Maven (`BUILD SUCCESS`).
+
+## Estado del Frontend MVP
+
+Frontend desarrollado con React y Vite e integrado con la API REST de Spring Boot.
+
+Actualmente permite gestionar el inventario de productos de punta a punta e incluye:
+
+- Interfaz de administración con sidebar
+- Formulario para crear y editar productos
+- Buscador por nombre
+- Limpieza de filtros de búsqueda
+- Tabla de inventario
+- Contador de productos
+- Indicadores visuales de stock
+- Confirmación personalizada antes de eliminar
+- Cancelación de edición
+- Mensajes de éxito y error
+- Indicador de carga
+- Estado visual cuando no existen resultados
+- Diseño responsive para distintos tamaños de pantalla
+- Manejo de errores cuando el backend no se encuentra disponible
+
+El frontend fue probado junto con el backend verificando las operaciones de creación, búsqueda, edición y eliminación.
 
 ## Producto
 
