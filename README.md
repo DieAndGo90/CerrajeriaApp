@@ -8,6 +8,8 @@ El Backend MVP se encuentra finalizado y probado. El frontend en React ya está 
 
 El frontend MVP se encuentra integrado y pulido, con una interfaz responsive y manejo visual de los principales estados de la aplicación.
 
+Actualmente el backend incorpora un módulo de movimientos de stock que permite registrar entradas y salidas, actualizar automáticamente el stock de los productos y consultar el historial de movimientos.
+
 ## Tecnologías
 
 ### Backend
@@ -51,6 +53,14 @@ El frontend MVP se encuentra integrado y pulido, con una interfaz responsive y m
 - Uso de DTOs
 - Manejo global de excepciones
 - Respuestas HTTP adecuadas
+- Registrar entradas de stock
+- Registrar salidas de stock
+- Actualización automática del stock
+- Validación de stock insuficiente
+- Historial de movimientos de stock
+- Consulta de movimientos por producto
+- Movimientos ordenados por fecha
+- Persistencia transaccional de productos y movimientos
 
 ## Estado del Backend MVP
 
@@ -71,6 +81,33 @@ Se verificaron correctamente:
 - Compilación y empaquetado con Maven
 
 La aplicación fue probada mediante Postman y el proyecto compila correctamente con Java 17 mediante Maven (`BUILD SUCCESS`).
+
+## Movimientos de Stock
+
+El backend incorpora un módulo para administrar entradas y salidas del inventario.
+
+Cada movimiento posee:
+
+- id
+- producto
+- tipo (`ENTRADA` o `SALIDA`)
+- cantidad
+- fecha
+
+Al registrar un movimiento:
+
+- Una `ENTRADA` aumenta automáticamente el stock del producto.
+- Una `SALIDA` disminuye automáticamente el stock.
+- No se permite realizar una salida superior al stock disponible.
+- No se permiten cantidades iguales o menores a cero.
+- Se valida que el producto exista.
+- Cada movimiento queda registrado como historial en MySQL.
+
+La actualización del producto y el registro del movimiento se ejecutan dentro de una transacción para mantener la consistencia de los datos.
+
+`MovimientoStock` posee una relación `ManyToOne` con `Producto`, permitiendo asociar múltiples movimientos a un mismo producto.
+
+El módulo fue probado mediante Postman verificando entradas, salidas, validaciones, manejo de errores y persistencia en MySQL.
 
 ## Estado del Frontend MVP
 
@@ -110,7 +147,11 @@ El backend utiliza una arquitectura simple por capas:
 
 Controller → Service → Repository → MySQL
 
-Los datos recibidos y enviados por la API se manejan mediante `ProductoDTO`, mientras que `Producto` representa la entidad persistida en la base de datos.
+Los productos utilizan `ProductoDTO` para el intercambio de datos con la API.
+
+Los movimientos de stock utilizan `MovimientoStockDTO` para recibir los datos de una operación y `MovimientoStockResponseDTO` para devolver respuestas controladas al cliente.
+
+Las entidades `Producto` y `MovimientoStock` representan los datos persistidos en MySQL.
 
 ## Endpoints
 
@@ -123,13 +164,21 @@ Los datos recibidos y enviados por la API se manejan mediante `ProductoDTO`, mie
 | PUT    | `/productos/{id}`              | Editar producto             |
 | DELETE | `/productos/{id}`              | Eliminar producto           |
 
+### Movimientos de Stock
+
+| Método | Endpoint                             | Descripción                         |
+| ------ | ------------------------------------ | ----------------------------------- |
+| POST   | `/movimientos`                       | Registrar entrada o salida de stock |
+| GET    | `/movimientos`                       | Listar todos los movimientos       |
+| GET    | `/movimientos/producto/{productoId}` | Listar movimientos de un producto  |
+
 ## Respuestas HTTP
 
 - `200 OK` - Consulta o edición realizada correctamente
-- `201 Created` - Producto creado correctamente
+- `201 Created` - Recurso creado correctamente
 - `204 No Content` - Producto eliminado correctamente
 - `400 Bad Request` - Datos inválidos
-- `404 Not Found` - Producto no encontrado
+- `404 Not Found` - Recurso solicitado no encontrado
 
 ## Base de datos
 
@@ -140,3 +189,10 @@ Base utilizada durante el desarrollo:
 ```text
 cerrajeria_db
 ```
+
+Actualmente contiene las tablas principales:
+
+- `productos`
+- `movimientos_stock`
+
+La tabla `movimientos_stock` se relaciona con `productos` mediante la clave foránea `producto_id`.
