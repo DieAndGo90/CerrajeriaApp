@@ -22,5 +22,7 @@ public class MovimientoStockResponseDTO {
 
     private Integer cantidad;
 
+    private String observacion;
+
     private LocalDateTime fecha;
 }

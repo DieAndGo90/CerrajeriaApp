@@ -5,6 +5,9 @@ import com.cerrajeria.cerrajeriaapp.entity.Producto;
 import com.cerrajeria.cerrajeriaapp.exception.ProductoNoEncontradoException;
 import com.cerrajeria.cerrajeriaapp.repository.ProductoRepository;
 import org.springframework.stereotype.Service;
+import com.cerrajeria.cerrajeriaapp.entity.TipoMovimiento;
+import org.springframework.transaction.annotation.Transactional;
+import com.cerrajeria.cerrajeriaapp.repository.MovimientoStockRepository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +16,17 @@ import java.util.List;
 public class ProductoService {
 
     private final ProductoRepository productoRepository;
+    private final MovimientoStockService movimientoStockService;
+    private final MovimientoStockRepository movimientoStockRepository;
 
-    public ProductoService(ProductoRepository productoRepository) {
+    public ProductoService(
+            ProductoRepository productoRepository,
+            MovimientoStockService movimientoStockService,
+            MovimientoStockRepository movimientoStockRepository) {
+
         this.productoRepository = productoRepository;
+        this.movimientoStockService = movimientoStockService;
+        this.movimientoStockRepository = movimientoStockRepository;
     }
 
     public List<ProductoDTO> listarProductos(){
@@ -30,11 +41,33 @@ public class ProductoService {
         return productosDTO;
     }
 
+    @Transactional
     public ProductoDTO crearProducto(ProductoDTO productoDTO) {
+
+        Integer stockInicial = productoDTO.getStock();
+
+        if (stockInicial == null || stockInicial < 0) {
+            throw new IllegalArgumentException(
+                    "El stock inicial debe ser 0 o mayor"
+            );
+        }
 
         Producto producto = convertirAEntidad(productoDTO);
 
+        // EL PRODUCTO SE CREA CON STOCK 0
+        producto.setStock(0);
+
         Producto productoGuardado = productoRepository.save(producto);
+
+        // REGISTRAR EL STOCK INICIAL COMO ENTRADA
+        if (stockInicial > 0) {
+            movimientoStockService.registrarMovimiento(
+                    productoGuardado.getId(),
+                    TipoMovimiento.ENTRADA,
+                    stockInicial,
+                    "Stock inicial"
+            );
+        }
 
         return convertirADTO(productoGuardado);
     }
@@ -54,7 +87,6 @@ public class ProductoService {
 
         producto.setNombre(productoActualizado.getNombre());
         producto.setPrecio(productoActualizado.getPrecio());
-        producto.setStock(productoActualizado.getStock());
 
         Producto productoGuardado = productoRepository.save(producto);
 
@@ -66,6 +98,14 @@ public class ProductoService {
         if (!productoRepository.existsById(id)) {
             throw new ProductoNoEncontradoException(id);
         }
+
+        // IMPEDIR ELIMINAR PRODUCTOS CON HISTORIAL
+        if (movimientoStockRepository.existsByProductoId(id)) {
+            throw new IllegalArgumentException(
+                    "No se puede eliminar un producto con movimientos de stock registrados."
+            );
+        }
+
         productoRepository.deleteById(id);
     }
 

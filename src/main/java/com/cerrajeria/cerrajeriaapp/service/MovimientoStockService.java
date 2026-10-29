@@ -31,7 +31,8 @@ public class MovimientoStockService {
     public MovimientoStockResponseDTO registrarMovimiento(
             Long productoId,
             TipoMovimiento tipo,
-            Integer cantidad) {
+            Integer cantidad,
+            String observacion) {
 
         if (cantidad == null || cantidad <= 0) {
             throw new IllegalArgumentException("La cantidad debe ser mayor a 0");
@@ -63,6 +64,7 @@ public class MovimientoStockService {
         movimiento.setProducto(producto);
         movimiento.setTipo(tipo);
         movimiento.setCantidad(cantidad);
+        movimiento.setObservacion(observacion);
         movimiento.setFecha(LocalDateTime.now());
 
         MovimientoStock movimientoGuardado =
@@ -103,6 +105,7 @@ public class MovimientoStockService {
         dto.setProductoNombre(movimiento.getProducto().getNombre());
         dto.setTipo(movimiento.getTipo());
         dto.setCantidad(movimiento.getCantidad());
+        dto.setObservacion(movimiento.getObservacion());
         dto.setFecha(movimiento.getFecha());
 
         return dto;

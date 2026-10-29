@@ -775,3 +775,120 @@ input[type="number"]::-webkit-outer-spin-button {
 .btn-limpiar {
   font-size: 13px;
 }
+
+/* SELECTOR DE PRODUCTOS */
+.campo-formulario select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background-color: #ffffff;
+  font-size: 14px;
+  color: #333333;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.campo-formulario select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+/* FORMULARIO DE MOVIMIENTOS */
+
+.movimiento-formulario > .campo-formulario,
+.movimiento-formulario > .form-grid {
+  max-width: 720px;
+}
+
+.movimiento-formulario > .form-grid {
+  margin-top: 24px;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+/* ADAPTACIÓN A CELULARES */
+@media (max-width: 600px) {
+  .movimiento-formulario > .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* SEPARACIÓN DE OBSERVACIÓN */
+.movimiento-formulario > .form-grid + .campo-formulario {
+  margin-top: 20px;
+}
+
+/* UBICACIÓN DEL BOTÓN REGISTRAR */
+.movimiento-formulario > .form-acciones {
+  max-width: 720px;
+  margin-top: 20px;
+}
+
+/* ETIQUETAS DEL HISTORIAL DE MOVIMIENTOS */
+
+.movimiento-badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.movimiento-entrada {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.movimiento-salida {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* FILTROS DEL HISTORIAL */
+
+.historial-filtros {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.historial-filtros label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.historial-filtros select {
+  padding: 9px 12px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* BÚSQUEDA DEL HISTORIAL */
+
+.historial-filtros label {
+  white-space: nowrap;
+  width: auto;
+}
+
+.filtro-producto {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filtro-producto input {
+  padding: 9px 12px;
+  border: 1px solid #d9e0e7;
+  border-radius: 8px;
+  font-size: 13px;
+  width: 200px;
+  max-width: 100%;
+  box-sizing: border-box;
+}

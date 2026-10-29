@@ -14,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/movimientos")
+@CrossOrigin(origins = "http://localhost:5173")
 public class MovimientoStockController {
 
     private final MovimientoStockService movimientoStockService;
@@ -28,10 +29,11 @@ public class MovimientoStockController {
 
         MovimientoStockResponseDTO movimiento =
                 movimientoStockService.registrarMovimiento(
-                dto.getProductoId(),
-                dto.getTipo(),
-                dto.getCantidad()
-        );
+                        dto.getProductoId(),
+                        dto.getTipo(),
+                        dto.getCantidad(),
+                        dto.getObservacion()
+                );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(movimiento);
     }

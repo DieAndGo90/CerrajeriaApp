@@ -8,4 +8,6 @@ import java.util.List;
 public interface MovimientoStockRepository extends JpaRepository<MovimientoStock, Long> {
 
     List<MovimientoStock> findByProductoIdOrderByFechaDesc(Long productoId);
+
+    boolean existsByProductoId(Long productoId);
 }

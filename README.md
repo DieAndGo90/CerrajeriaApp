@@ -1,16 +1,10 @@
-# CerrajeriaApp
+# 🔐 CerrajeriaApp
 
-Sistema web de gestión para una cerrajería.
+Sistema web de gestión de inventario para una cerrajería, desarrollado como proyecto full stack con **Java, Spring Boot, React y MySQL**.
 
-El proyecto está siendo desarrollado como una aplicación full stack con Spring Boot, React y MySQL.
+El objetivo es construir una aplicación funcional que permita administrar productos, controlar existencias y registrar movimientos de stock, aplicando buenas prácticas de desarrollo de software.
 
-El Backend MVP se encuentra finalizado y probado. El frontend en React ya está integrado con la API REST y permite gestionar productos de punta a punta.
-
-El frontend MVP se encuentra integrado y pulido, con una interfaz responsive y manejo visual de los principales estados de la aplicación.
-
-Actualmente el backend incorpora un módulo de movimientos de stock que permite registrar entradas y salidas, actualizar automáticamente el stock de los productos y consultar el historial de movimientos.
-
-## Tecnologías
+## 🛠️ Tecnologías
 
 ### Backend
 
@@ -23,176 +17,208 @@ Actualmente el backend incorpora un módulo de movimientos de stock que permite 
 - Lombok
 - Bean Validation
 
-### Base de datos
-
-- MySQL
-
 ### Frontend
 
 - React
 - Vite
+- JavaScript
 - Fetch API
 - CSS
 
-## Funcionalidades actuales
+### Base de datos
 
-- Crear productos
-- Listar productos
-- Buscar productos por ID
-- Buscar productos por nombre
-- Limpiar búsqueda y volver al inventario completo
-- Editar productos
-- Cancelar edición
-- Eliminar productos con confirmación
-- Indicador visual de productos sin stock
-- Mensajes de éxito y error
-- Estado de carga
-- Estado vacío cuando no hay resultados
-- Diseño responsive
-- Validación de datos
-- Uso de DTOs
-- Manejo global de excepciones
-- Respuestas HTTP adecuadas
-- Registrar entradas de stock
-- Registrar salidas de stock
-- Actualización automática del stock
-- Validación de stock insuficiente
-- Historial de movimientos de stock
-- Consulta de movimientos por producto
-- Movimientos ordenados por fecha
-- Persistencia transaccional de productos y movimientos
+- MySQL
 
-## Estado del Backend MVP
+## ✅ Funcionalidades implementadas
 
-Backend MVP finalizado y probado.
+### Gestión de productos
 
-Se verificaron correctamente:
+- Crear y listar productos.
+- Buscar productos por ID mediante la API REST.
+- Buscar productos por nombre desde React.
+- Editar nombre y precio de productos existentes.
+- Eliminar productos sin movimientos asociados.
+- Confirmación antes de eliminar.
+- Indicadores visuales de productos sin stock.
+- Contador de productos registrados.
+- Validaciones y mensajes de éxito o error.
 
-- Creación de productos
-- Listado de productos
-- Búsqueda por ID
-- Búsqueda por nombre
-- Edición de productos
-- Eliminación de productos
-- Validación de datos
-- Manejo de productos inexistentes
-- Respuestas HTTP adecuadas
-- Persistencia en MySQL
-- Compilación y empaquetado con Maven
+### Gestión de movimientos de stock
 
-La aplicación fue probada mediante Postman y el proyecto compila correctamente con Java 17 mediante Maven (`BUILD SUCCESS`).
+- Registrar entradas y salidas de productos.
+- Actualizar automáticamente el stock disponible.
+- Registrar observaciones opcionales.
+- Consultar el historial de movimientos.
+- Mostrar fecha, producto, tipo, cantidad y observación.
+- Ordenar el historial por fecha, mostrando los movimientos recientes primero.
+- Filtrar movimientos por tipo: entrada o salida.
+- Buscar movimientos por nombre de producto.
+- Combinar filtros de búsqueda y tipo.
+- Actualizar automáticamente el historial después de registrar un movimiento.
+- Identificar entradas y salidas mediante etiquetas visuales.
 
-## Movimientos de Stock
+### Reglas de negocio
 
-El backend incorpora un módulo para administrar entradas y salidas del inventario.
+- Las cantidades de los movimientos deben ser mayores que cero.
+- No se permiten salidas superiores al stock disponible.
+- El stock no puede quedar negativo mediante los movimientos.
+- Los cambios de stock de productos existentes se realizan mediante movimientos registrados.
+- La edición de productos permite modificar nombre y precio, pero no directamente el stock.
+- Los productos con movimientos registrados no pueden eliminarse.
+- Los productos nuevos con stock inicial positivo generan automáticamente un movimiento de entrada con la observación "Stock inicial".
+- La creación del producto y el registro de su stock inicial se realizan dentro de una misma transacción.
 
-Cada movimiento posee:
+### Interfaz y experiencia de usuario
 
-- id
-- producto
-- tipo (`ENTRADA` o `SALIDA`)
-- cantidad
-- fecha
+- Navegación lateral entre Productos y Movimientos de Stock.
+- Interfaz responsive.
+- Formularios con validaciones.
+- Estados de carga y mensajes de error.
+- Tablas de inventario e historial.
+- Confirmación personalizada de eliminación.
+- Mensajes de éxito al registrar operaciones.
+- Comunicación con la API REST de Spring Boot.
 
-Al registrar un movimiento:
+## 📦 Modelo de datos
 
-- Una `ENTRADA` aumenta automáticamente el stock del producto.
-- Una `SALIDA` disminuye automáticamente el stock.
-- No se permite realizar una salida superior al stock disponible.
-- No se permiten cantidades iguales o menores a cero.
-- Se valida que el producto exista.
-- Cada movimiento queda registrado como historial en MySQL.
+### Producto
 
-La actualización del producto y el registro del movimiento se ejecutan dentro de una transacción para mantener la consistencia de los datos.
+Cada producto contiene:
 
-`MovimientoStock` posee una relación `ManyToOne` con `Producto`, permitiendo asociar múltiples movimientos a un mismo producto.
+- `id`
+- `nombre`
+- `stock`
+- `precio`
 
-El módulo fue probado mediante Postman verificando entradas, salidas, validaciones, manejo de errores y persistencia en MySQL.
+### MovimientoStock
 
-## Estado del Frontend MVP
+Cada movimiento contiene:
 
-Frontend desarrollado con React y Vite e integrado con la API REST de Spring Boot.
+- `id`
+- `producto`
+- `tipo` (`ENTRADA` o `SALIDA`)
+- `cantidad`
+- `observacion`
+- `fecha`
 
-Actualmente permite gestionar el inventario de productos de punta a punta e incluye:
+Un producto puede tener múltiples movimientos asociados mediante una relación `ManyToOne` desde `MovimientoStock` hacia `Producto`.
 
-- Interfaz de administración con sidebar
-- Formulario para crear y editar productos
-- Buscador por nombre
-- Limpieza de filtros de búsqueda
-- Tabla de inventario
-- Contador de productos
-- Indicadores visuales de stock
-- Confirmación personalizada antes de eliminar
-- Cancelación de edición
-- Mensajes de éxito y error
-- Indicador de carga
-- Estado visual cuando no existen resultados
-- Diseño responsive para distintos tamaños de pantalla
-- Manejo de errores cuando el backend no se encuentra disponible
+## 🏗️ Arquitectura
 
-El frontend fue probado junto con el backend verificando las operaciones de creación, búsqueda, edición y eliminación.
+El backend utiliza una arquitectura por capas:
 
-## Producto
+**Controller → Service → Repository → MySQL**
 
-Cada producto posee:
+- **Controller:** expone los endpoints REST y recibe solicitudes HTTP.
+- **Service:** implementa las reglas de negocio y las operaciones de stock.
+- **Repository:** gestiona el acceso a MySQL mediante Spring Data JPA.
+- **Entity:** representa los datos persistidos.
+- **DTO:** permite intercambiar datos entre el backend y el frontend.
 
-- id
-- nombre
-- stock
-- precio
+Se utilizan:
 
-## Arquitectura
+- `ProductoDTO`
+- `MovimientoStockDTO`
+- `MovimientoStockResponseDTO`
 
-El backend utiliza una arquitectura simple por capas:
+El manejo global de excepciones se implementa mediante `GlobalExceptionHandler`.
 
-Controller → Service → Repository → MySQL
+El frontend está organizado en componentes y páginas React, separando la navegación y la gestión de productos y movimientos.
 
-Los productos utilizan `ProductoDTO` para el intercambio de datos con la API.
+## 🌐 Endpoints de la API REST
 
-Los movimientos de stock utilizan `MovimientoStockDTO` para recibir los datos de una operación y `MovimientoStockResponseDTO` para devolver respuestas controladas al cliente.
+### Productos
 
-Las entidades `Producto` y `MovimientoStock` representan los datos persistidos en MySQL.
+| Método | Endpoint                       | Descripción                                 |
+| ------ | ------------------------------ | ------------------------------------------- |
+| POST   | `/productos`                   | Crear producto                              |
+| GET    | `/productos`                   | Listar productos                            |
+| GET    | `/productos/{id}`              | Buscar producto por ID                      |
+| GET    | `/productos/buscar?nombre=...` | Buscar productos por nombre                 |
+| PUT    | `/productos/{id}`              | Editar nombre y precio                      |
+| DELETE | `/productos/{id}`              | Eliminar producto sin movimientos asociados |
 
-## Endpoints
+### Movimientos de stock
 
-| Método | Endpoint                       | Descripción                 |
-| ------ | ------------------------------ | --------------------------- |
-| POST   | `/productos`                   | Crear producto              |
-| GET    | `/productos`                   | Listar productos            |
-| GET    | `/productos/{id}`              | Buscar producto por ID      |
-| GET    | `/productos/buscar?nombre=...` | Buscar productos por nombre |
-| PUT    | `/productos/{id}`              | Editar producto             |
-| DELETE | `/productos/{id}`              | Eliminar producto           |
+| Método | Endpoint                             | Descripción                          |
+| ------ | ------------------------------------ | ------------------------------------ |
+| POST   | `/movimientos`                       | Registrar entrada o salida           |
+| GET    | `/movimientos`                       | Listar movimientos                   |
+| GET    | `/movimientos/producto/{productoId}` | Consultar movimientos de un producto |
 
-### Movimientos de Stock
+## 📡 Respuestas HTTP
 
-| Método | Endpoint                             | Descripción                         |
-| ------ | ------------------------------------ | ----------------------------------- |
-| POST   | `/movimientos`                       | Registrar entrada o salida de stock |
-| GET    | `/movimientos`                       | Listar todos los movimientos       |
-| GET    | `/movimientos/producto/{productoId}` | Listar movimientos de un producto  |
+La API utiliza códigos HTTP para comunicar el resultado de las operaciones.
 
-## Respuestas HTTP
+- `200 OK`: consulta o actualización exitosa.
+- `201 Created`: recurso creado correctamente.
+- `204 No Content`: eliminación exitosa.
+- `400 Bad Request`: datos inválidos, stock insuficiente u operación no permitida.
+- `404 Not Found`: recurso inexistente.
 
-- `200 OK` - Consulta o edición realizada correctamente
-- `201 Created` - Recurso creado correctamente
-- `204 No Content` - Producto eliminado correctamente
-- `400 Bad Request` - Datos inválidos
-- `404 Not Found` - Recurso solicitado no encontrado
+Los errores se procesan mediante un manejador global de excepciones y se devuelven al frontend para mostrar mensajes informativos.
 
-## Base de datos
+## 🗄️ Base de datos
 
 La aplicación utiliza MySQL.
 
-Base utilizada durante el desarrollo:
+**Base de datos de desarrollo:** `cerrajeria_db`
 
-```text
-cerrajeria_db
-```
-
-Actualmente contiene las tablas principales:
+Tablas principales:
 
 - `productos`
 - `movimientos_stock`
 
-La tabla `movimientos_stock` se relaciona con `productos` mediante la clave foránea `producto_id`.
+La tabla `movimientos_stock` contiene una clave foránea `producto_id` que relaciona cada movimiento con su producto.
+
+Los cambios de stock se ejecutan mediante operaciones transaccionales para mantener la consistencia de los datos.
+
+## 🧪 Pruebas realizadas
+
+El proyecto fue probado durante su desarrollo mediante Postman, el navegador web y consultas a MySQL con phpMyAdmin.
+
+Se verificaron:
+
+- Operaciones CRUD de productos.
+- Búsquedas y validaciones.
+- Registro de entradas y salidas.
+- Actualización de stock.
+- Rechazo de salidas con stock insuficiente.
+- Persistencia del historial en MySQL.
+- Registro automático de stock inicial.
+- Protección contra eliminación de productos con historial.
+- Eliminación de productos sin movimientos asociados.
+- Comunicación entre React y Spring Boot.
+- Visualización y filtrado del historial.
+
+El backend también fue compilado y empaquetado correctamente mediante Maven.
+
+## 📌 Estado actual
+
+**Backend MVP:** finalizado, probado y ampliado con movimientos de stock.
+
+**Frontend React:** integrado con la API REST, con gestión de productos, registro de movimientos e historial.
+
+**Base de datos MySQL:** integrada y operativa en el entorno de desarrollo.
+
+El proyecto cuenta con una primera versión funcional de gestión de inventario, que continuará evolucionando.
+
+## 🚀 Próximas funcionalidades
+
+Las siguientes mejoras están previstas para futuras etapas:
+
+- Gestión de precios de costo y venta.
+- Cálculo de márgenes de ganancia y rentabilidad estimada.
+- Alertas de stock mínimo.
+- Registro de ventas e ingresos.
+- Dashboard con indicadores del negocio.
+- Mejoras adicionales de experiencia de usuario.
+- Preparación y despliegue de la aplicación.
+
+Estas funcionalidades todavía no forman parte de la versión actual.
+
+## 🎯 Objetivo del proyecto
+
+CerrajeriaApp es un proyecto de portfolio orientado a aplicar conocimientos de desarrollo full stack, arquitectura por capas, APIs REST, persistencia de datos y reglas de negocio.
+
+La aplicación busca evolucionar progresivamente hacia un sistema de gestión sencillo, confiable y utilizable en una cerrajería real.
