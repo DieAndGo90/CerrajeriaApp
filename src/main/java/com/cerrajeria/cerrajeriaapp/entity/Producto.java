@@ -22,4 +22,6 @@ public class Producto {
     private Integer stock;
 
     private BigDecimal precio;
+
+    private BigDecimal costoCompra;
 }

@@ -16,6 +16,7 @@ function Productos() {
   const [nombre, setNombre] = useState("");
   const [stock, setStock] = useState("");
   const [precio, setPrecio] = useState("");
+  const [costoCompra, setCostoCompra] = useState("");
 
   const [mensaje, setMensaje] = useState("");
 
@@ -41,6 +42,7 @@ function Productos() {
       nombre: nombre,
       stock: Number(stock),
       precio: Number(precio),
+      costoCompra: costoCompra === "" ? null : Number(costoCompra),
     };
 
     const editando = idEditando !== null;
@@ -97,12 +99,14 @@ function Productos() {
     setNombre(producto.nombre);
     setStock(producto.stock);
     setPrecio(producto.precio);
+    setCostoCompra(producto.costoCompra ?? "");
   };
 
   const limpiarFormulario = () => {
     setNombre("");
     setStock("");
     setPrecio("");
+    setCostoCompra("");
     setIdEditando(null);
   };
 
@@ -295,6 +299,18 @@ function Productos() {
               required
             />
           </div>
+
+          <div className="campo-formulario">
+            <label>Costo de compra</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={costoCompra}
+              onChange={(e) => setCostoCompra(e.target.value)}
+              placeholder="Ej: 9000"
+            />
+          </div>
         </div>
 
         <div className="form-acciones">
@@ -367,6 +383,9 @@ function Productos() {
                     <th>Nombre</th>
                     <th>Stock</th>
                     <th>Precio</th>
+                    <th>Costo de compra</th>
+                    <th>Ganancia bruta</th>
+                    <th>Margen (%)</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
@@ -389,6 +408,27 @@ function Productos() {
                       </td>
                       <td>
                         ${Number(producto.precio).toLocaleString("es-AR")}
+                      </td>
+                      <td>
+                        {producto.costoCompra != null
+                          ? `$${Number(producto.costoCompra).toLocaleString("es-AR")}`
+                          : "Sin registrar"}
+                      </td>
+                      <td>
+                        {producto.gananciaBruta != null
+                          ? `$${Number(producto.gananciaBruta).toLocaleString("es-AR")}`
+                          : "Sin calcular"}
+                      </td>
+                      <td>
+                        {producto.margenPorcentaje != null
+                          ? `${Number(producto.margenPorcentaje).toLocaleString(
+                              "es-AR",
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              },
+                            )}%`
+                          : "Sin calcular"}
                       </td>
 
                       <td>

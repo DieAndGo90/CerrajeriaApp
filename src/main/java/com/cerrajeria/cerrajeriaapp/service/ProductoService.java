@@ -9,6 +9,8 @@ import com.cerrajeria.cerrajeriaapp.entity.TipoMovimiento;
 import org.springframework.transaction.annotation.Transactional;
 import com.cerrajeria.cerrajeriaapp.repository.MovimientoStockRepository;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -88,6 +90,10 @@ public class ProductoService {
         producto.setNombre(productoActualizado.getNombre());
         producto.setPrecio(productoActualizado.getPrecio());
 
+        if (productoActualizado.getCostoCompra() != null) {
+            producto.setCostoCompra(productoActualizado.getCostoCompra());
+        }
+
         Producto productoGuardado = productoRepository.save(producto);
 
         return convertirADTO(productoGuardado);
@@ -129,6 +135,23 @@ public class ProductoService {
         dto.setNombre(producto.getNombre());
         dto.setStock(producto.getStock());
         dto.setPrecio(producto.getPrecio());
+        dto.setCostoCompra(producto.getCostoCompra());
+        if (producto.getCostoCompra() != null
+                && producto.getPrecio() != null) {
+
+            dto.setGananciaBruta(
+                    producto.getPrecio().subtract(producto.getCostoCompra())
+            );
+
+            if (producto.getPrecio().compareTo(BigDecimal.ZERO) > 0) {
+
+                BigDecimal margen = dto.getGananciaBruta()
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(producto.getPrecio(), 2, RoundingMode.HALF_UP);
+
+                dto.setMargenPorcentaje(margen);
+            }
+        }
 
         return dto;
     }
@@ -139,6 +162,7 @@ public class ProductoService {
         producto.setNombre(dto.getNombre());
         producto.setStock(dto.getStock());
         producto.setPrecio(dto.getPrecio());
+        producto.setCostoCompra(dto.getCostoCompra());
 
         return producto;
     }

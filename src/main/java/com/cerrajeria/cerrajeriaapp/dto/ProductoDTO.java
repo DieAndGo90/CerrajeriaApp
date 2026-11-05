@@ -28,4 +28,11 @@ public class ProductoDTO {
     @Positive(message = "El precio debe ser mayor que 0")
     private BigDecimal precio;
 
+    @PositiveOrZero(message = "El costo de compra no puede ser negativo")
+    private BigDecimal costoCompra;
+
+    private BigDecimal gananciaBruta;
+
+    private BigDecimal margenPorcentaje;
+
 }
