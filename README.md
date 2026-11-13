@@ -4,6 +4,8 @@ Sistema web de gestión de inventario para una cerrajería, desarrollado como pr
 
 El objetivo es construir una aplicación funcional que permita administrar productos, controlar existencias, registrar movimientos de stock y consultar costos, precios y rentabilidad estimada, aplicando buenas prácticas de desarrollo de software.
 
+Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de inventario, valorización de mercadería, estadísticas históricas, filtros por período, alertas de productos agotados y reportes exportables.
+
 ## 🛠️ Tecnologías
 
 ### Backend
@@ -30,6 +32,31 @@ El objetivo es construir una aplicación funcional que permita administrar produ
 - MySQL
 
 ## ✅ Funcionalidades implementadas
+
+### Dashboard de gestión
+
+- Panel principal con indicadores generales del inventario.
+- Cantidad de productos registrados y unidades disponibles.
+- Identificación de productos sin stock.
+- Valorización del inventario a costo de compra.
+- Indicador de cobertura de costos registrados.
+- Cálculo del valor potencial de venta del inventario.
+- Estadísticas acumuladas de entradas y salidas de stock.
+- Gráficos comparativos de movimientos por mes.
+- Tabla de balances mensuales con indicadores visuales.
+- Ranking de hasta cinco productos con mayor movimiento de stock, según la suma de unidades ingresadas y retiradas.
+- Panel de alertas de productos agotados.
+- Filtros dinámicos por mes o por todo el historial, aplicados a estadísticas, gráficos, balances y ranking de movimientos.
+- Exportación del resumen mensual del período seleccionado a CSV compatible con Excel.
+- Actualización manual de datos sin recargar la aplicación.
+- Manejo de estados de carga, errores y ausencia de movimientos.
+- Diseño responsive integrado con la navegación lateral.
+
+Los indicadores de inventario representan el estado actual de las existencias, independientemente del período seleccionado para las estadísticas de movimientos.
+
+El valor del inventario a costo se obtiene multiplicando el stock por el costo de compra registrado de cada producto. Si faltan costos, el resultado es parcial y se informa el porcentaje de productos con costo registrado.
+
+El valor potencial de venta se obtiene multiplicando el stock por el precio de venta de cada producto. No representa facturación ni ganancias realizadas.
 
 ### Gestión de productos
 
@@ -98,11 +125,11 @@ Estos indicadores representan una rentabilidad estimada por unidad, antes de imp
 - El costo de compra no puede ser negativo.
 - El costo de compra puede permanecer sin registrar temporalmente.
 - Si un producto no tiene costo registrado, no se calcula su ganancia ni su margen.
-- Los cálculos comerciales se realizan en el backend, evitando duplicar reglas de negocio en React.
+- Los cálculos de ganancia bruta y margen por producto se realizan en el backend; React calcula los indicadores agregados del Dashboard a partir de los datos recibidos de la API.
 
 ### Interfaz y experiencia de usuario
 
-- Navegación lateral entre Productos y Movimientos de Stock.
+- Navegación lateral entre Dashboard, Productos y Movimientos de Stock, con el Dashboard como pantalla inicial.
 - Interfaz responsive para escritorio y dispositivos móviles.
 - Formularios con validaciones.
 - Estados de carga y mensajes de error.
@@ -162,20 +189,22 @@ Se utilizan:
 
 El manejo global de excepciones se implementa mediante `GlobalExceptionHandler`.
 
-El frontend está organizado en componentes y páginas React, separando la navegación y la gestión de productos y movimientos.
+El frontend está organizado en componentes y páginas React, separando la navegación y las páginas de Dashboard, Productos y Movimientos de Stock.
+
+El Dashboard reutiliza los endpoints `GET /productos` y `GET /movimientos` para calcular indicadores, agrupar movimientos por mes, filtrar estadísticas y generar reportes CSV desde React. No requiere endpoints adicionales.
 
 ## 🌐 Endpoints de la API REST
 
 ### Productos
 
-| Método | Endpoint                       | Descripción                                 |
-| ------ | ------------------------------ | ------------------------------------------- |
-| POST   | `/productos`                   | Crear producto con precio y costo opcional  |
-| GET    | `/productos`                   | Listar productos con información comercial  |
-| GET    | `/productos/{id}`              | Buscar producto por ID                      |
-| GET    | `/productos/buscar?nombre=...` | Buscar productos por nombre                 |
-| PUT    | `/productos/{id}`              | Editar nombre, precio y costo de compra     |
-| DELETE | `/productos/{id}`              | Eliminar producto sin movimientos asociados |
+| Método | Endpoint                       | Descripción                                                   |
+| ------ | ------------------------------ | ------------------------------------------------------------- |
+| POST   | `/productos`                   | Crear producto con precio de venta y costo de compra opcional |
+| GET    | `/productos`                   | Listar productos con información comercial                    |
+| GET    | `/productos/{id}`              | Buscar producto por ID                                        |
+| GET    | `/productos/buscar?nombre=...` | Buscar productos por nombre                                   |
+| PUT    | `/productos/{id}`              | Editar nombre, precio y costo de compra                       |
+| DELETE | `/productos/{id}`              | Eliminar producto sin movimientos asociados                   |
 
 Las respuestas de productos incluyen la ganancia bruta y el margen porcentual calculados cuando existe información suficiente.
 
@@ -244,29 +273,46 @@ Se verificaron:
 - Visualización de rentabilidad en React.
 - Comprobación del diseño responsive en dispositivos móviles.
 
+### Dashboard de gestión
+
+- Cálculo de indicadores de inventario y actualización del stock tras registrar movimientos.
+- Valorización a costo registrado, cobertura de costos y valor potencial de venta.
+- Agrupación de entradas y salidas por mes y cálculo de balances.
+- Incorporación automática de un nuevo mes al registrar un movimiento.
+- Ranking de productos y alertas de productos sin stock.
+- Filtrado de estadísticas, gráficos, tabla y ranking por período.
+- Visualización de mensajes de error al detener el backend y recuperación de datos mediante el botón de actualización.
+- Descarga del resumen mensual en CSV y apertura correcta en Excel.
+
 El backend también fue compilado y empaquetado correctamente mediante Maven durante las etapas anteriores.
 
 ## 📌 Estado actual
 
 **Backend MVP:** finalizado y ampliado con gestión de movimientos de stock, costos, precios y cálculos de rentabilidad.
 
-**Frontend React:** integrado con la API REST, con gestión de productos, registro e historial de movimientos, y visualización de información comercial.
+**Frontend React:** integrado con la API REST, con gestión de productos, registro e historial de movimientos, visualización de información comercial y Dashboard de gestión.
 
 **Base de datos MySQL:** integrada y operativa en el entorno de desarrollo.
 
-El proyecto cuenta con una versión funcional de gestión de inventario y consulta de rentabilidad estimada por producto.
+**Etapa 09 — Dashboard de gestión:** completada.
+
+El proyecto cuenta con una versión funcional de gestión de inventario, control de movimientos, consulta de rentabilidad estimada por producto y análisis de indicadores del negocio. La aplicación funciona en el entorno local de desarrollo; el despliegue en producción queda pendiente.
 
 ## 🚀 Próximas funcionalidades
 
-Las siguientes mejoras se consideran para futuras etapas:
+**Próxima etapa: 10 — Actualización masiva de precios.**
+
+Se prevé incorporar la actualización porcentual de precios de venta, con vista previa, confirmación y persistencia en el backend, sin modificar el stock ni los costos de compra automáticamente.
+
+Otras mejoras previstas para futuras etapas:
 
 - Alertas de stock mínimo.
 - Registro de ventas e ingresos.
-- Dashboard con indicadores del negocio.
 - Gestión de proveedores.
 - Importación y actualización de listas de precios de proveedores.
 - Historial de cambios de costos y precios.
 - Mejoras adicionales de experiencia de usuario.
+- Autenticación y control de acceso mediante usuarios y roles.
 - Preparación y despliegue de la aplicación.
 
 Estas funcionalidades todavía no forman parte de la versión actual.

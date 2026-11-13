@@ -9,6 +9,14 @@ function Sidebar({ paginaActual, cambiarPagina }) {
       <nav className="sidebar-nav">
         <button
           type="button"
+          className={`nav-item ${paginaActual === "dashboard" ? "active" : ""}`}
+          onClick={() => cambiarPagina("dashboard")}
+        >
+          Dashboard
+        </button>
+
+        <button
+          type="button"
           className={`nav-item ${paginaActual === "productos" ? "active" : ""}`}
           onClick={() => cambiarPagina("productos")}
         >

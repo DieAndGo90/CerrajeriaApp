@@ -892,3 +892,310 @@ input[type="number"]::-webkit-outer-spin-button {
   max-width: 100%;
   box-sizing: border-box;
 }
+
+/* DASHBOARD */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.dashboard-grid .tabla-card {
+  min-width: 0;
+  margin: 0;
+}
+
+/* Tablets */
+@media (max-width: 1100px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Celulares */
+@media (max-width: 700px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ESTILO DE LAS TARJETAS DEL DASHBOARD */
+
+.dashboard-grid .tabla-card {
+  padding: 24px;
+}
+
+.dashboard-grid .tabla-encabezado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.dashboard-grid .tabla-contador {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+  background: transparent;
+  padding: 0;
+  line-height: 1.2;
+}
+
+/* ICONOS DEL DASHBOARD */
+
+.dashboard-grid .tabla-card::before {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 23px;
+  margin-bottom: 16px;
+}
+
+.dashboard-grid .tabla-card:nth-child(1)::before {
+  content: "📦";
+  background-color: #eff6ff;
+}
+
+.dashboard-grid .tabla-card:nth-child(2)::before {
+  content: "📊";
+  background-color: #ecfdf5;
+}
+
+.dashboard-grid .tabla-card:nth-child(3)::before {
+  content: "⚠️";
+  background-color: #fffbeb;
+}
+
+.dashboard-grid .tabla-card:nth-child(4)::before {
+  content: "💰";
+  background-color: #f5f3ff;
+}
+
+/* ESTADISTICAS DE MOVIMIENTOS */
+
+.dashboard-movimientos > div:not(.tabla-encabezado) {
+  padding: 18px 24px 0;
+}
+
+.dashboard-movimientos > div:last-child {
+  padding-bottom: 24px;
+}
+
+.dashboard-movimientos label {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #1e293b;
+}
+
+.dashboard-movimientos progress {
+  display: block;
+  width: 100%;
+  max-width: 750px;
+  height: 18px;
+  border: none;
+  border-radius: 9px;
+  overflow: hidden;
+  appearance: none;
+  background-color: #e2e8f0;
+}
+
+/* Fondo de las barras */
+.dashboard-movimientos progress::-webkit-progress-bar {
+  background-color: #e2e8f0;
+}
+
+/* Entradas */
+#barra-entradas::-webkit-progress-value {
+  background-color: #2563eb;
+}
+
+/* Salidas */
+#barra-salidas::-webkit-progress-value {
+  background-color: #f59e0b;
+}
+
+/* COLORES DEL GRAFICO MENSUAL */
+
+/* Entradas mensuales */
+.dashboard-movimientos progress[id^="entrada-"]::-webkit-progress-value {
+  background-color: #2563eb;
+}
+
+/* Salidas mensuales */
+.dashboard-movimientos progress[id^="salida-"]::-webkit-progress-value {
+  background-color: #f59e0b;
+}
+
+/* BALANCES MENSUALES */
+
+.productos-tabla .balance-positivo {
+  color: #15803d;
+  background-color: #dcfce7;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.productos-tabla .balance-negativo {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.productos-tabla .balance-neutro {
+  color: #64748b;
+  font-weight: 700;
+}
+
+/* DASHBOARD - EVOLUCION MENSUAL */
+
+.dashboard-mensual {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 20px;
+}
+
+.dashboard-mensual > .tabla-encabezado {
+  grid-column: 1 / -1;
+  padding: 0 0 16px;
+}
+
+.dashboard-mensual > div:not(.tabla-encabezado) {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.dashboard-mensual > div:last-child {
+  padding-bottom: 16px;
+}
+
+.dashboard-mensual progress {
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+  .dashboard-mensual {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* FILTRO DE ESTADISTICAS */
+
+.dashboard-filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dashboard-filtro label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.dashboard-filtro select {
+  padding: 9px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: white;
+  color: #1e293b;
+  min-width: 190px;
+}
+
+/* BOTON ACTUALIZAR DASHBOARD */
+
+.dashboard-actualizar {
+  margin-top: 12px;
+  padding: 10px 16px;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dashboard-actualizar:hover:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.dashboard-actualizar:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* PULIDO FINAL DEL DASHBOARD */
+
+.dashboard-page > .tabla-card {
+  margin-top: 20px;
+}
+
+.dashboard-page .tabla-encabezado {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dashboard-grid .tabla-encabezado {
+  padding: 0;
+  border-bottom: none;
+}
+
+.dashboard-mensual h4 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  color: #1e293b;
+  text-transform: capitalize;
+}
+
+.dashboard-mensual progress {
+  margin-bottom: 14px;
+}
+
+.dashboard-page .dashboard-filtro select {
+  width: 100%;
+}
+
+.dashboard-page .dashboard-actualizar {
+  margin-top: 0;
+}
+
+.dashboard-page > .contenido-header .dashboard-actualizar {
+  margin-top: 12px;
+}
+
+@media (max-width: 700px) {
+  .dashboard-page .dashboard-filtro {
+    width: 100%;
+  }
+
+  .dashboard-page .dashboard-filtro select {
+    min-width: 0;
+  }
+}
+
+/* VALOR POTENCIAL DE VENTA */
+
+.dashboard-grid .tabla-card:nth-child(5)::before {
+  content: "📈";
+  background-color: #ecfdf5;
+}
+
+/* Pantallas medianas */
+@media (min-width: 1101px) and (max-width: 1400px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.dashboard-grid .tabla-contador {
+  overflow-wrap: anywhere;
+}
