@@ -30,6 +30,13 @@ function Sidebar({ paginaActual, cambiarPagina }) {
         >
           Movimientos de Stock
         </button>
+
+        <button
+          className={`nav-item ${paginaActual === "precios" ? "active" : ""}`}
+          onClick={() => cambiarPagina("precios")}
+        >
+          📈 Actualizar precios
+        </button>
       </nav>
     </aside>
   );

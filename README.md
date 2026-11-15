@@ -33,6 +33,17 @@ Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de i
 
 ## ✅ Funcionalidades implementadas
 
+### Actualización masiva de precios
+
+- Actualización porcentual de los precios de venta de todo el inventario.
+- Vista previa de los nuevos precios y diferencias antes de aplicar los cambios.
+- Confirmación previa a la actualización masiva.
+- Validación de porcentajes positivos.
+- Actualización transaccional de precios mediante Spring Boot y JPA.
+- Conservación de los costos de compra y las existencias.
+- Recálculo automático de la ganancia bruta y el margen de rentabilidad.
+- Actualización automática del listado de productos después de confirmar la operación.
+
 ### Dashboard de gestión
 
 - Panel principal con indicadores generales del inventario.
@@ -186,10 +197,11 @@ Se utilizan:
 - `ProductoDTO`
 - `MovimientoStockDTO`
 - `MovimientoStockResponseDTO`
+- `ActualizacionPreciosDTO`
 
 El manejo global de excepciones se implementa mediante `GlobalExceptionHandler`.
 
-El frontend está organizado en componentes y páginas React, separando la navegación y las páginas de Dashboard, Productos y Movimientos de Stock.
+El frontend está organizado en componentes y páginas React, separando la navegación y las páginas de Dashboard, Productos, Movimientos de Stock y Actualización de Precios.
 
 El Dashboard reutiliza los endpoints `GET /productos` y `GET /movimientos` para calcular indicadores, agrupar movimientos por mes, filtrar estadísticas y generar reportes CSV desde React. No requiere endpoints adicionales.
 
@@ -197,14 +209,15 @@ El Dashboard reutiliza los endpoints `GET /productos` y `GET /movimientos` para 
 
 ### Productos
 
-| Método | Endpoint                       | Descripción                                                   |
-| ------ | ------------------------------ | ------------------------------------------------------------- |
-| POST   | `/productos`                   | Crear producto con precio de venta y costo de compra opcional |
-| GET    | `/productos`                   | Listar productos con información comercial                    |
-| GET    | `/productos/{id}`              | Buscar producto por ID                                        |
-| GET    | `/productos/buscar?nombre=...` | Buscar productos por nombre                                   |
-| PUT    | `/productos/{id}`              | Editar nombre, precio y costo de compra                       |
-| DELETE | `/productos/{id}`              | Eliminar producto sin movimientos asociados                   |
+| Método | Endpoint                        | Descripción                                         |
+| ------ | ------------------------------- | --------------------------------------------------- |
+| POST   | `/productos`                    | Crear producto con precio de venta y costo opcional |
+| GET    | `/productos`                    | Listar productos con información comercial          |
+| GET    | `/productos/{id}`               | Buscar producto por ID                              |
+| GET    | `/productos/buscar?nombre=...`  | Buscar productos por nombre                         |
+| PUT    | `/productos/{id}`               | Editar nombre, precio y costo de compra             |
+| DELETE | `/productos/{id}`               | Eliminar producto sin movimientos asociados         |
+| POST   | `/productos/actualizar-precios` | Aplicar un aumento porcentual a todos los productos |
 
 Las respuestas de productos incluyen la ganancia bruta y el margen porcentual calculados cuando existe información suficiente.
 

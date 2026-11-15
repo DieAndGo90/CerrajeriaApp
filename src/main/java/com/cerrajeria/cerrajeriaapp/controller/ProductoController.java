@@ -1,5 +1,6 @@
 package com.cerrajeria.cerrajeriaapp.controller;
 
+import com.cerrajeria.cerrajeriaapp.dto.ActualizacionPreciosDTO;
 import com.cerrajeria.cerrajeriaapp.dto.ProductoDTO;
 import com.cerrajeria.cerrajeriaapp.service.ProductoService;
 import jakarta.validation.Valid;
@@ -7,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/productos")
@@ -61,5 +63,16 @@ public class ProductoController {
         return productoService.buscarPorNombre(nombre);
     }
 
+    @PostMapping("/actualizar-precios")
+    public ResponseEntity<Map<String, Integer>> actualizarPrecios(
+            @Valid @RequestBody ActualizacionPreciosDTO dto) {
+
+        int cantidad = productoService
+                .actualizarPreciosMasivamente(dto.getPorcentaje());
+
+        return ResponseEntity.ok(
+                Map.of("productosActualizados", cantidad)
+        );
+    }
 
 }

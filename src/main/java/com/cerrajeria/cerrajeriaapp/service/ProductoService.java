@@ -128,6 +128,35 @@ public class ProductoService {
         return productosDTO;
     }
 
+    @Transactional
+    public int actualizarPreciosMasivamente(BigDecimal porcentaje) {
+
+        if (porcentaje == null || porcentaje.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException(
+                    "El porcentaje debe ser mayor a cero"
+            );
+        }
+
+        List<Producto> productos = productoRepository.findAll();
+
+        BigDecimal factor = BigDecimal.ONE.add(
+                porcentaje.divide(BigDecimal.valueOf(100))
+        );
+
+        for (Producto producto : productos) {
+
+            BigDecimal nuevoPrecio = producto.getPrecio()
+                    .multiply(factor)
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            producto.setPrecio(nuevoPrecio);
+        }
+
+        productoRepository.saveAll(productos);
+
+        return productos.size();
+    }
+
     private ProductoDTO convertirADTO(Producto producto) {
         ProductoDTO dto = new ProductoDTO();
 

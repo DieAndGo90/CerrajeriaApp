@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar";
 import Productos from "./pages/Productos";
 import Movimientos from "./pages/Movimientos";
 import Dashboard from "./pages/Dashboard";
+import ActualizacionPrecios from "./pages/ActualizacionPrecios";
 import "./App.css";
 
 function App() {
@@ -16,6 +17,8 @@ function App() {
         <Dashboard />
       ) : paginaActual === "productos" ? (
         <Productos />
+      ) : paginaActual === "precios" ? (
+        <ActualizacionPrecios />
       ) : (
         <Movimientos />
       )}
