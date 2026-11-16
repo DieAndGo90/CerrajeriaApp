@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "../App.css";
+import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
 
 const API_URL = "http://localhost:8080/productos";
 
@@ -19,6 +20,8 @@ function Productos() {
   const [costoCompra, setCostoCompra] = useState("");
 
   const [mensaje, setMensaje] = useState("");
+  const [exportandoExcel, setExportandoExcel] = useState(false);
+  const [errorExportacion, setErrorExportacion] = useState("");
 
   // CARGAR PRODUCTOS DEL BACKEND
   useEffect(() => {
@@ -203,6 +206,226 @@ function Productos() {
       });
   };
 
+  // EXPORTAR INVENTARIO COMPLETO A EXCEL
+  const exportarInventarioExcel = async () => {
+    if (exportandoExcel) return;
+
+    setExportandoExcel(true);
+    setErrorExportacion("");
+
+    try {
+      // Consultar todo el inventario, no solo los resultados de la búsqueda.
+      const respuesta = await fetch(API_URL);
+
+      if (!respuesta.ok) {
+        throw new Error("No se pudo consultar el inventario.");
+      }
+
+      const inventario = await respuesta.json();
+
+      if (!Array.isArray(inventario)) {
+        throw new Error("La API no devolvió una lista de productos.");
+      }
+
+      const workbook = crearLibro();
+      const formatoMoneda = '"$"#,##0.00;[Red]-"$"#,##0.00';
+      const formatoPorcentaje = "0.00%";
+
+      // Redondear los importes monetarios a centavos antes de acumularlos.
+      const aCentavos = (valor) => Math.round(Number(valor) * 100);
+
+      const filas = inventario.map((producto) => {
+        const cantidad = Number(producto.stock);
+        const precioCentavos = aCentavos(producto.precio);
+        const tieneCosto = producto.costoCompra != null;
+        const costoCentavos = tieneCosto
+          ? aCentavos(producto.costoCompra)
+          : null;
+
+        const costoTotal = tieneCosto ? cantidad * costoCentavos : null;
+        const valorVenta = cantidad * precioCentavos;
+
+        const gananciaPotencial = tieneCosto ? valorVenta - costoTotal : null;
+
+        return {
+          id: producto.id,
+          nombre: producto.nombre,
+          stock: cantidad,
+          estado: cantidad === 0 ? "Sin stock" : "Disponible",
+          costo: tieneCosto ? costoCentavos / 100 : null,
+          precio: precioCentavos / 100,
+          ganancia:
+            producto.gananciaBruta != null
+              ? Number(producto.gananciaBruta)
+              : null,
+          margen:
+            producto.margenPorcentaje != null
+              ? Number(producto.margenPorcentaje) / 100
+              : null,
+          costoTotal: tieneCosto ? costoTotal / 100 : null,
+          valorVenta: valorVenta / 100,
+          gananciaPotencial: tieneCosto ? gananciaPotencial / 100 : null,
+          estadoCosto: tieneCosto ? "Registrado" : "Sin registrar",
+        };
+      });
+
+      const columnaMoneda = (header, key, width = 22) => ({
+        header,
+        key,
+        width,
+        style: { numFmt: formatoMoneda },
+      });
+
+      // HOJA 1: INVENTARIO
+      crearHoja(
+        workbook,
+        "Inventario",
+        [
+          { header: "ID", key: "id", width: 10 },
+          { header: "Producto", key: "nombre", width: 38 },
+          { header: "Stock", key: "stock", width: 12 },
+          { header: "Estado stock", key: "estado", width: 18 },
+          columnaMoneda("Costo unitario", "costo"),
+          columnaMoneda("Precio de venta", "precio"),
+          columnaMoneda("Ganancia bruta/u.", "ganancia"),
+          {
+            header: "Margen bruto",
+            key: "margen",
+            width: 18,
+            style: { numFmt: formatoPorcentaje },
+          },
+          columnaMoneda("Costo total stock", "costoTotal"),
+          columnaMoneda("Venta potencial", "valorVenta"),
+          columnaMoneda("Ganancia potencial", "gananciaPotencial", 25),
+          { header: "Estado costo", key: "estadoCosto", width: 20 },
+        ],
+        filas,
+      );
+
+      // HOJA 2: RESUMEN ECONÓMICO
+      const conCosto = filas.filter((fila) => fila.costoTotal != null);
+      const sinCosto = filas.length - conCosto.length;
+
+      const sumarImportes = (lista, clave) =>
+        lista.reduce((total, fila) => total + aCentavos(fila[clave]), 0) / 100;
+
+      const totalCosto = sumarImportes(conCosto, "costoTotal");
+      const totalVenta = sumarImportes(filas, "valorVenta");
+      const ventaConCosto = sumarImportes(conCosto, "valorVenta");
+      const gananciaConCosto = sumarImportes(conCosto, "gananciaPotencial");
+
+      const indicadores = [
+        {
+          indicador: "Fecha del reporte",
+          valor: new Date().toLocaleString("es-AR", {
+            hour12: false,
+          }),
+          detalle: "Inventario completo al momento de la consulta.",
+        },
+        {
+          indicador: "Productos registrados",
+          valor: filas.length,
+          detalle: "Cantidad de productos diferentes.",
+        },
+        {
+          indicador: "Unidades en stock",
+          valor: filas.reduce((total, fila) => total + fila.stock, 0),
+          detalle: "Suma de las existencias actuales.",
+        },
+        {
+          indicador: "Productos agotados",
+          valor: filas.filter((fila) => fila.stock === 0).length,
+          detalle: "Productos con stock igual a cero.",
+        },
+        {
+          indicador: "Productos con costo registrado",
+          valor: conCosto.length,
+          detalle: "Incluye productos con costo igual a cero.",
+        },
+        {
+          indicador: "Productos sin costo registrado",
+          valor: sinCosto,
+          detalle: "No se consideran en el cálculo de rentabilidad.",
+        },
+        {
+          indicador: "Cobertura de costos",
+          valor: filas.length ? conCosto.length / filas.length : null,
+          detalle: "Proporción de productos con costo registrado.",
+          formato: formatoPorcentaje,
+        },
+        {
+          indicador: "Valor del inventario a costo registrado",
+          valor: conCosto.length ? totalCosto : null,
+          detalle: sinCosto
+            ? "Valor parcial: faltan costos de compra."
+            : "Costo de las existencias actuales.",
+          formato: formatoMoneda,
+        },
+        {
+          indicador: "Valor potencial de venta (todo)",
+          valor: totalVenta,
+          detalle: "Stock por precio de venta actual de todos los productos.",
+          formato: formatoMoneda,
+        },
+        {
+          indicador: "Venta potencial con costo registrado",
+          valor: conCosto.length ? ventaConCosto : null,
+          detalle: "Solo productos con costo conocido.",
+          formato: formatoMoneda,
+        },
+        {
+          indicador: "Ganancia bruta potencial",
+          valor: conCosto.length ? gananciaConCosto : null,
+          detalle:
+            "Solo productos con costo conocido. No es ganancia realizada.",
+          formato: formatoMoneda,
+        },
+        {
+          indicador: "Margen bruto potencial",
+          valor:
+            conCosto.length && ventaConCosto !== 0
+              ? gananciaConCosto / ventaConCosto
+              : null,
+          detalle: "Ganancia potencial / venta potencial del mismo conjunto.",
+          formato: formatoPorcentaje,
+        },
+      ];
+
+      const resumen = crearHoja(
+        workbook,
+        "Resumen económico",
+        [
+          { header: "Indicador", key: "indicador", width: 48 },
+          { header: "Valor", key: "valor", width: 27 },
+          { header: "Descripción", key: "detalle", width: 78 },
+        ],
+        indicadores,
+      );
+
+      // Cada indicador conserva su formato numérico correspondiente.
+      indicadores.forEach((indicador, indice) => {
+        if (indicador.formato) {
+          resumen.getCell(indice + 2, 2).numFmt = indicador.formato;
+        }
+      });
+
+      // El resumen no necesita filtros; el inventario sí.
+      resumen.autoFilter = undefined;
+
+      const fecha = new Date();
+      const anio = fecha.getFullYear();
+      const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+      const dia = String(fecha.getDate()).padStart(2, "0");
+
+      await descargarExcel(workbook, `inventario-${anio}-${mes}-${dia}`);
+    } catch (error) {
+      console.error("Error al exportar inventario:", error);
+      setErrorExportacion("No se pudo generar el reporte de inventario.");
+    } finally {
+      setExportandoExcel(false);
+    }
+  };
+
   return (
     <main className="contenido-principal">
       <div className="contenido-header">
@@ -348,6 +571,12 @@ function Productos() {
         </div>
       )}
 
+      {errorExportacion && (
+        <div className="mensaje-error" role="alert">
+          <p>{errorExportacion}</p>
+        </div>
+      )}
+
       {!loading && !error && (
         <div className="tabla-card">
           <div className="tabla-encabezado">
@@ -360,6 +589,15 @@ function Productos() {
               {productos.length}{" "}
               {productos.length === 1 ? "producto" : "productos"}
             </span>
+            <button
+              type="button"
+              className="dashboard-actualizar"
+              onClick={exportarInventarioExcel}
+              disabled={exportandoExcel}
+              style={{ marginTop: 0 }}
+            >
+              {exportandoExcel ? "Exportando..." : "Exportar inventario Excel"}
+            </button>
           </div>
 
           {productos.length === 0 ? (

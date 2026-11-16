@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
 
 function Dashboard() {
   const [totalProductos, setTotalProductos] = useState(0);
@@ -17,6 +18,8 @@ function Dashboard() {
   const [valorPotencialVenta, setValorPotencialVenta] = useState(0);
 
   const [recarga, setRecarga] = useState(0);
+  const [exportandoExcel, setExportandoExcel] = useState(false);
+  const [errorExportacion, setErrorExportacion] = useState("");
 
   const actualizarDatos = () => {
     setLoading(true);
@@ -219,37 +222,90 @@ function Dashboard() {
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
 
-  const exportarResumenCSV = () => {
-    if (datosGraficoMensual.length === 0) return;
+  const exportarResumenExcel = async () => {
+    if (datosGraficoMensual.length === 0 || exportandoExcel) return;
 
-    const filas = [
-      ["Mes", "Entradas", "Salidas", "Balance"],
-      ...datosGraficoMensual.map((dato) => [
-        formatearMes(dato.mes),
-        dato.entradas,
-        dato.salidas,
-        dato.entradas - dato.salidas,
-      ]),
-    ];
+    setExportandoExcel(true);
+    setErrorExportacion("");
 
-    const contenido =
-      "\uFEFF" + filas.map((fila) => fila.join(";")).join("\r\n");
+    try {
+      const workbook = crearLibro();
 
-    const archivo = new Blob([contenido], {
-      type: "text/csv;charset=utf-8;",
-    });
+      // Hoja 1: resumen mensual
+      const hojaResumen = crearHoja(
+        workbook,
+        "Resumen mensual",
+        [
+          { header: "Mes", key: "mes", width: 25 },
+          { header: "Entradas", key: "entradas", width: 16 },
+          { header: "Salidas", key: "salidas", width: 16 },
+          { header: "Balance", key: "balance", width: 16 },
+        ],
+        datosGraficoMensual.map((dato) => ({
+          mes: formatearMes(dato.mes),
+          entradas: dato.entradas,
+          salidas: dato.salidas,
+          balance: dato.entradas - dato.salidas,
+        })),
+      );
 
-    const url = URL.createObjectURL(archivo);
-    const enlace = document.createElement("a");
+      const filaTotal = hojaResumen.addRow({
+        mes: "TOTAL",
+        entradas: totalEntradas,
+        salidas: totalSalidas,
+        balance: totalEntradas - totalSalidas,
+      });
 
-    enlace.href = url;
-    enlace.download = `movimientos-${periodoSeleccionado}.csv`;
+      filaTotal.font = { bold: true };
+      filaTotal.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFE2E8F0" },
+      };
 
-    document.body.appendChild(enlace);
-    enlace.click();
-    enlace.remove();
+      // Hoja 2: detalle del período seleccionado
+      const filasDetalle = [...movimientosFiltrados]
+        .sort((a, b) => b.fecha.localeCompare(a.fecha))
+        .map((movimiento) => {
+          // Preservar la fecha y hora local del backend en Excel.
+          const fecha = new Date(`${movimiento.fecha.slice(0, 19)}Z`);
 
-    URL.revokeObjectURL(url);
+          return {
+            fecha: Number.isNaN(fecha.getTime()) ? movimiento.fecha : fecha,
+            productoId: movimiento.productoId,
+            producto: movimiento.productoNombre,
+            tipo: movimiento.tipo,
+            cantidad: Number(movimiento.cantidad),
+            observacion: movimiento.observacion ?? "",
+          };
+        });
+
+      const hojaDetalle = crearHoja(
+        workbook,
+        "Detalle movimientos",
+        [
+          { header: "Fecha y hora", key: "fecha", width: 24 },
+          { header: "ID producto", key: "productoId", width: 15 },
+          { header: "Producto", key: "producto", width: 35 },
+          { header: "Tipo", key: "tipo", width: 15 },
+          { header: "Cantidad", key: "cantidad", width: 15 },
+          { header: "Observación", key: "observacion", width: 45 },
+        ],
+        filasDetalle,
+      );
+
+      hojaDetalle.getColumn("fecha").numFmt = "dd/mm/yyyy hh:mm:ss";
+
+      await descargarExcel(
+        workbook,
+        `reporte-movimientos-${periodoSeleccionado}`,
+      );
+    } catch (error) {
+      console.error("Error al exportar Excel:", error);
+      setErrorExportacion("No se pudo generar el reporte Excel.");
+    } finally {
+      setExportandoExcel(false);
+    }
   };
 
   return (
@@ -464,12 +520,16 @@ function Dashboard() {
               <button
                 type="button"
                 className="dashboard-actualizar"
-                onClick={exportarResumenCSV}
-                disabled={datosGraficoMensual.length === 0}
+                onClick={exportarResumenExcel}
+                disabled={exportandoExcel || datosGraficoMensual.length === 0}
               >
-                Exportar CSV
+                {exportandoExcel ? "Exportando..." : "Exportar Excel"}
               </button>
             </div>
+
+            {errorExportacion && (
+              <div className="mensaje-error">{errorExportacion}</div>
+            )}
 
             <div className="tabla-responsive">
               <table className="productos-tabla">

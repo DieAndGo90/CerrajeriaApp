@@ -4,7 +4,7 @@ Sistema web de gestión de inventario para una cerrajería, desarrollado como pr
 
 El objetivo es construir una aplicación funcional que permita administrar productos, controlar existencias, registrar movimientos de stock y consultar costos, precios y rentabilidad estimada, aplicando buenas prácticas de desarrollo de software.
 
-Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de inventario, valorización de mercadería, estadísticas históricas, filtros por período, alertas de productos agotados y reportes exportables.
+Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de inventario, valorización de mercadería, estadísticas históricas, filtros por período y alertas de productos agotados. También permite actualizar masivamente los precios de venta y generar reportes Excel de inventario y movimientos de stock.
 
 ## 🛠️ Tecnologías
 
@@ -26,6 +26,7 @@ Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de i
 - JavaScript
 - Fetch API
 - CSS
+- ExcelJS
 
 ### Base de datos
 
@@ -58,7 +59,7 @@ Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de i
 - Ranking de hasta cinco productos con mayor movimiento de stock, según la suma de unidades ingresadas y retiradas.
 - Panel de alertas de productos agotados.
 - Filtros dinámicos por mes o por todo el historial, aplicados a estadísticas, gráficos, balances y ranking de movimientos.
-- Exportación del resumen mensual del período seleccionado a CSV compatible con Excel.
+- Exportación a Excel (.xlsx) del resumen mensual y del detalle de movimientos correspondientes al período seleccionado.
 - Actualización manual de datos sin recargar la aplicación.
 - Manejo de estados de carga, errores y ausencia de movimientos.
 - Diseño responsive integrado con la navegación lateral.
@@ -80,6 +81,7 @@ El valor potencial de venta se obtiene multiplicando el stock por el precio de v
 - Indicadores visuales de productos sin stock.
 - Contador de productos registrados.
 - Validaciones y mensajes de éxito o error.
+- Exportación del inventario completo a Excel, independientemente de la búsqueda activa.
 
 ### Gestión de movimientos de stock
 
@@ -94,6 +96,7 @@ El valor potencial de venta se obtiene multiplicando el stock por el precio de v
 - Combinar filtros de búsqueda y tipo.
 - Actualizar automáticamente el historial después de registrar un movimiento.
 - Identificar entradas y salidas mediante etiquetas visuales.
+- Exportar el historial a Excel respetando los filtros de tipo y nombre de producto.
 
 ### Costos, precios y rentabilidad
 
@@ -122,6 +125,36 @@ La ganancia bruta y el margen son valores calculados que se devuelven mediante `
 
 Estos indicadores representan una rentabilidad estimada por unidad, antes de impuestos y otros gastos. No representan ganancias efectivamente realizadas mediante ventas.
 
+### Reportes y exportación a Excel
+
+Los reportes se generan desde React mediante ExcelJS y se descargan como archivos `.xlsx`, utilizando los datos de la API REST existente. No requieren endpoints adicionales ni cambios en el modelo de datos.
+
+**Reporte del Dashboard:**
+
+- Hoja `Resumen mensual`: mes, unidades ingresadas, unidades retiradas, balance y fila de totales.
+- Hoja `Detalle movimientos`: fecha y hora, ID del producto, nombre, tipo, cantidad y observación.
+- Ambas hojas respetan el período seleccionado en el Dashboard (un mes o todo el historial).
+
+**Reporte de inventario:**
+
+- Hoja `Inventario`: ID, producto, stock, estado del stock, costo unitario, precio de venta, ganancia bruta por unidad, margen bruto, costo total del stock, venta potencial, ganancia potencial y estado del costo.
+- Hoja `Resumen económico`: fecha de generación, productos registrados, unidades disponibles, productos agotados, cobertura de costos, valorización a costo registrado, venta potencial, ganancia bruta potencial y margen bruto potencial.
+- Consulta el inventario completo mediante `GET /productos`, sin depender de los resultados de la búsqueda en pantalla.
+- Diferencia los costos no registrados de los costos iguales a cero.
+
+**Reporte del historial de movimientos:**
+
+- Hoja `Historial de movimientos`: ID del movimiento, fecha y hora, ID del producto, nombre, tipo, cantidad y observación, ordenados del más reciente al más antiguo.
+- Hoja `Resumen del historial`: fecha de generación, filtros aplicados, cantidad de movimientos y productos involucrados, cantidad de registros de entrada y salida, unidades ingresadas y retiradas, y balance de unidades.
+- Respeta la combinación de filtros por tipo de movimiento y nombre de producto.
+
+**Características comunes:**
+
+- Archivos Excel con múltiples hojas, encabezados con estilos, columnas ajustadas, filtros y encabezados congelados.
+- Formatos numéricos, monetarios, porcentuales y de fecha según el tipo de información.
+- Estados de exportación y mensajes de error durante la generación del archivo.
+- Utilidad reutilizable `frontend/src/utils/excel.js` para crear libros, agregar hojas y descargar los reportes.
+
 ### Reglas de negocio
 
 - Las cantidades de los movimientos deben ser mayores que cero.
@@ -136,11 +169,14 @@ Estos indicadores representan una rentabilidad estimada por unidad, antes de imp
 - El costo de compra no puede ser negativo.
 - El costo de compra puede permanecer sin registrar temporalmente.
 - Si un producto no tiene costo registrado, no se calcula su ganancia ni su margen.
-- Los cálculos de ganancia bruta y margen por producto se realizan en el backend; React calcula los indicadores agregados del Dashboard a partir de los datos recibidos de la API.
+- Los cálculos de ganancia bruta y margen por producto se realizan en el backend; React calcula los indicadores agregados del Dashboard y los reportes a partir de los datos recibidos de la API.
+- La ganancia potencial del inventario se calcula únicamente para los productos con costo registrado. El margen bruto potencial se obtiene dividiendo esa ganancia por el valor potencial de venta del mismo conjunto de productos.
+- El balance de movimientos (entradas menos salidas) representa la variación de unidades en la selección, no necesariamente el stock actual.
+- Los reportes económicos representan valores potenciales a los precios actuales, no ventas ni ganancias efectivamente realizadas.
 
 ### Interfaz y experiencia de usuario
 
-- Navegación lateral entre Dashboard, Productos y Movimientos de Stock, con el Dashboard como pantalla inicial.
+- Navegación lateral entre Dashboard, Productos, Movimientos de Stock y Actualizar precios, con el Dashboard como pantalla inicial.
 - Interfaz responsive para escritorio y dispositivos móviles.
 - Formularios con validaciones.
 - Estados de carga y mensajes de error.
@@ -203,7 +239,7 @@ El manejo global de excepciones se implementa mediante `GlobalExceptionHandler`.
 
 El frontend está organizado en componentes y páginas React, separando la navegación y las páginas de Dashboard, Productos, Movimientos de Stock y Actualización de Precios.
 
-El Dashboard reutiliza los endpoints `GET /productos` y `GET /movimientos` para calcular indicadores, agrupar movimientos por mes, filtrar estadísticas y generar reportes CSV desde React. No requiere endpoints adicionales.
+El Dashboard reutiliza los endpoints `GET /productos` y `GET /movimientos` para calcular indicadores, agrupar movimientos por mes y filtrar estadísticas. Los reportes Excel reutilizan los datos de la API y se generan en el navegador mediante ExcelJS. La lógica común de creación de libros, hojas y descarga se concentra en `frontend/src/utils/excel.js`. No se requieren endpoints adicionales.
 
 ## 🌐 Endpoints de la API REST
 
@@ -295,27 +331,49 @@ Se verificaron:
 - Ranking de productos y alertas de productos sin stock.
 - Filtrado de estadísticas, gráficos, tabla y ranking por período.
 - Visualización de mensajes de error al detener el backend y recuperación de datos mediante el botón de actualización.
-- Descarga del resumen mensual en CSV y apertura correcta en Excel.
+- Descarga del reporte Excel de movimientos del Dashboard con resumen mensual, detalle y totales.
+- Comprobación del filtro por mes y apertura del archivo en Excel.
+
+### Actualización masiva de precios
+
+- Validación y pruebas del endpoint de actualización porcentual mediante Postman.
+- Vista previa y confirmación del aumento desde React.
+- Comprobación de los precios actualizados y del recálculo de rentabilidad.
+- Verificación de que los costos de compra y las existencias no se modifican por el aumento de precios.
+
+### Reportes Excel
+
+- Generación, descarga y apertura de los tres archivos `.xlsx` en Microsoft Excel.
+- Verificación de las dos hojas de cada reporte, encabezados, columnas y filtros.
+- Comparación de los totales del Dashboard con el detalle de movimientos.
+- Exportación de los productos y comprobación de la valorización del inventario, la cobertura de costos y el margen bruto potencial.
+- Verificación de que los productos sin costo registrado mantienen vacíos los campos de rentabilidad correspondientes.
+- Comprobación de la exportación del historial completo y de los filtros combinados por tipo de movimiento y nombre de producto.
+- Comparación del resumen del historial con los registros exportados, incluyendo balances negativos cuando solo se seleccionan salidas.
 
 El backend también fue compilado y empaquetado correctamente mediante Maven durante las etapas anteriores.
 
 ## 📌 Estado actual
 
-**Backend MVP:** finalizado y ampliado con gestión de movimientos de stock, costos, precios y cálculos de rentabilidad.
+**Backend MVP:** finalizado y ampliado con gestión de movimientos de stock, costos, precios, cálculos de rentabilidad y actualización masiva de precios.
 
-**Frontend React:** integrado con la API REST, con gestión de productos, registro e historial de movimientos, visualización de información comercial y Dashboard de gestión.
+**Frontend React:** integrado con la API REST, con gestión de productos, registro e historial de movimientos, visualización de información comercial, Dashboard de gestión, actualización masiva de precios y generación de reportes Excel.
 
 **Base de datos MySQL:** integrada y operativa en el entorno de desarrollo.
 
-**Etapa 09 — Dashboard de gestión:** completada.
+**Etapas completadas:**
 
-El proyecto cuenta con una versión funcional de gestión de inventario, control de movimientos, consulta de rentabilidad estimada por producto y análisis de indicadores del negocio. La aplicación funciona en el entorno local de desarrollo; el despliegue en producción queda pendiente.
+- 09 — Dashboard de gestión.
+- 10 — Actualización masiva de precios.
+- 11 — Reportes y exportación a Excel.
+
+El proyecto cuenta con una versión funcional de gestión de inventario, control de movimientos, consulta de rentabilidad estimada por producto, análisis de indicadores del negocio, actualización masiva de precios y exportación de reportes. La aplicación funciona en el entorno local de desarrollo; la autenticación, la preparación para producción y el despliegue quedan pendientes.
 
 ## 🚀 Próximas funcionalidades
 
-**Próxima etapa: 10 — Actualización masiva de precios.**
+**Próxima etapa: 12 — Seguridad y autenticación de usuarios.**
 
-Se prevé incorporar la actualización porcentual de precios de venta, con vista previa, confirmación y persistencia en el backend, sin modificar el stock ni los costos de compra automáticamente.
+Se prevé incorporar autenticación y control de acceso mediante usuarios y roles, proteger las operaciones de la API REST y preparar el sistema para su uso en un entorno real.
 
 Otras mejoras previstas para futuras etapas:
 
@@ -325,10 +383,16 @@ Otras mejoras previstas para futuras etapas:
 - Importación y actualización de listas de precios de proveedores.
 - Historial de cambios de costos y precios.
 - Mejoras adicionales de experiencia de usuario.
-- Autenticación y control de acceso mediante usuarios y roles.
 - Preparación y despliegue de la aplicación.
 
 Estas funcionalidades todavía no forman parte de la versión actual.
+
+## 🔎 Consideraciones antes del despliegue
+
+- Revisar las vulnerabilidades informadas por `npm audit` y evaluar las actualizaciones de dependencias compatibles con el proyecto.
+- Verificar que las fechas y horas de los reportes coincidan con las del historial en pantalla, incluyendo el formato de 24 horas y la zona horaria.
+- Configurar las URLs de la API y las credenciales de base de datos para cada entorno, sin exponer secretos en el repositorio.
+- Completar la autenticación y autorización antes de publicar la aplicación.
 
 ## 🎯 Objetivo del proyecto
 

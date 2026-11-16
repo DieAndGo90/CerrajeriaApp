@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
 
 const API_URL = "http://localhost:8080/productos";
 
@@ -16,6 +17,10 @@ function Movimientos() {
   const [movimientos, setMovimientos] = useState([]);
   const [filtroTipo, setFiltroTipo] = useState("TODOS");
   const [busquedaProducto, setBusquedaProducto] = useState("");
+  const [cargandoHistorial, setCargandoHistorial] = useState(true);
+  const [errorHistorial, setErrorHistorial] = useState("");
+  const [exportandoExcel, setExportandoExcel] = useState(false);
+  const [errorExportacion, setErrorExportacion] = useState("");
 
   // CARGAR PRODUCTOS DEL BACKEND
   useEffect(() => {
@@ -54,6 +59,12 @@ function Movimientos() {
       })
       .catch((error) => {
         console.error("Error al cargar movimientos:", error);
+        setErrorHistorial(
+          "No se pudo cargar el historial completo de movimientos.",
+        );
+      })
+      .finally(() => {
+        setCargandoHistorial(false);
       });
   }, []);
 
@@ -147,6 +158,161 @@ function Movimientos() {
 
     return coincideTipo && coincideProducto;
   });
+
+  // EXPORTAR LOS MOVIMIENTOS QUE COINCIDEN CON LOS FILTROS
+  const exportarMovimientosExcel = async () => {
+    if (
+      exportandoExcel ||
+      cargandoHistorial ||
+      errorHistorial ||
+      movimientosFiltrados.length === 0
+    )
+      return;
+
+    setExportandoExcel(true);
+    setErrorExportacion("");
+
+    try {
+      const workbook = crearLibro();
+      const seleccion = [...movimientosFiltrados].sort(
+        (a, b) => new Date(b.fecha) - new Date(a.fecha),
+      );
+
+      // Hoja 1: detalle de los movimientos visibles en el historial.
+      const hojaDetalle = crearHoja(
+        workbook,
+        "Historial de movimientos",
+        [
+          { header: "ID movimiento", key: "id", width: 17 },
+          { header: "Fecha y hora", key: "fecha", width: 24 },
+          { header: "ID producto", key: "productoId", width: 16 },
+          { header: "Producto", key: "producto", width: 35 },
+          { header: "Tipo", key: "tipo", width: 15 },
+          { header: "Cantidad", key: "cantidad", width: 15 },
+          { header: "Observación", key: "observacion", width: 50 },
+        ],
+        seleccion.map((movimiento) => {
+          // Excel no tiene zona horaria. Conservamos la hora local del backend.
+          const fecha = new Date(`${movimiento.fecha.slice(0, 19)}Z`);
+
+          return {
+            id: movimiento.id,
+            fecha: Number.isNaN(fecha.getTime()) ? movimiento.fecha : fecha,
+            productoId: movimiento.productoId,
+            producto: movimiento.productoNombre,
+            tipo: movimiento.tipo,
+            cantidad: Number(movimiento.cantidad),
+            observacion: movimiento.observacion ?? "",
+          };
+        }),
+      );
+
+      hojaDetalle.getColumn("fecha").numFmt = "dd/mm/yyyy hh:mm:ss";
+
+      // Hoja 2: indicadores calculados solo sobre los registros exportados.
+      const entradas = seleccion.filter((m) => m.tipo === "ENTRADA");
+      const salidas = seleccion.filter((m) => m.tipo === "SALIDA");
+      const totalEntradas = entradas.reduce(
+        (total, m) => total + Number(m.cantidad),
+        0,
+      );
+      const totalSalidas = salidas.reduce(
+        (total, m) => total + Number(m.cantidad),
+        0,
+      );
+      const productosInvolucrados = new Set(seleccion.map((m) => m.productoId))
+        .size;
+      const fechaReporte = new Date();
+      const tipoSeleccionado = {
+        TODOS: "Todos los movimientos",
+        ENTRADA: "Solo entradas",
+        SALIDA: "Solo salidas",
+      }[filtroTipo];
+
+      const resumen = [
+        {
+          indicador: "Fecha del reporte",
+          valor: fechaReporte.toLocaleString("es-AR", {
+            hour12: false,
+          }),
+          descripcion: "Momento de generación del archivo.",
+        },
+        {
+          indicador: "Filtro de tipo",
+          valor: tipoSeleccionado,
+          descripcion: "Tipo de movimiento seleccionado en pantalla.",
+        },
+        {
+          indicador: "Búsqueda de producto",
+          valor: busquedaProducto.trim() || "Todos los productos",
+          descripcion: "Término utilizado para filtrar por nombre.",
+        },
+        {
+          indicador: "Movimientos exportados",
+          valor: seleccion.length,
+          descripcion: "Cantidad de registros que coinciden con los filtros.",
+        },
+        {
+          indicador: "Productos involucrados",
+          valor: productosInvolucrados,
+          descripcion: "Cantidad de productos diferentes en la selección.",
+        },
+        {
+          indicador: "Movimientos de entrada",
+          valor: entradas.length,
+          descripcion: "Cantidad de registros de entrada exportados.",
+        },
+        {
+          indicador: "Movimientos de salida",
+          valor: salidas.length,
+          descripcion: "Cantidad de registros de salida exportados.",
+        },
+        {
+          indicador: "Unidades ingresadas",
+          valor: totalEntradas,
+          descripcion: "Suma de cantidades de las entradas exportadas.",
+        },
+        {
+          indicador: "Unidades retiradas",
+          valor: totalSalidas,
+          descripcion: "Suma de cantidades de las salidas exportadas.",
+        },
+        {
+          indicador: "Balance de unidades",
+          valor: totalEntradas - totalSalidas,
+          descripcion:
+            "Entradas menos salidas de la selección. No es el stock actual.",
+        },
+      ];
+
+      crearHoja(
+        workbook,
+        "Resumen del historial",
+        [
+          { header: "Indicador", key: "indicador", width: 32 },
+          { header: "Valor", key: "valor", width: 34 },
+          { header: "Descripción", key: "descripcion", width: 78 },
+        ],
+        resumen,
+      );
+
+      const fechaArchivo = [
+        fechaReporte.getFullYear(),
+        String(fechaReporte.getMonth() + 1).padStart(2, "0"),
+        String(fechaReporte.getDate()).padStart(2, "0"),
+      ].join("-");
+
+      await descargarExcel(
+        workbook,
+        `historial-movimientos-${filtroTipo.toLowerCase()}-${fechaArchivo}`,
+      );
+    } catch (error) {
+      console.error("Error al exportar movimientos:", error);
+      setErrorExportacion("No se pudo generar el Excel del historial.");
+    } finally {
+      setExportandoExcel(false);
+    }
+  };
 
   return (
     <main className="contenido-principal">
@@ -259,9 +425,33 @@ function Movimientos() {
             <p>Entradas y salidas registradas en el inventario.</p>
           </div>
 
-          <span className="tabla-contador">
-            {movimientosFiltrados.length} de {movimientos.length} movimientos
-          </span>
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <span className="tabla-contador">
+              {movimientosFiltrados.length} de {movimientos.length} movimientos
+            </span>
+
+            <button
+              type="button"
+              className="dashboard-actualizar"
+              style={{ marginTop: 0 }}
+              onClick={exportarMovimientosExcel}
+              disabled={
+                exportandoExcel ||
+                cargandoHistorial ||
+                Boolean(errorHistorial) ||
+                movimientosFiltrados.length === 0
+              }
+            >
+              {exportandoExcel ? "Exportando..." : "Exportar historial Excel"}
+            </button>
+          </div>
         </div>
 
         <div className="historial-filtros">
@@ -290,7 +480,19 @@ function Movimientos() {
           </div>
         </div>
 
-        {movimientosFiltrados.length === 0 ? (
+        {errorExportacion && (
+          <div className="mensaje-error" role="alert">
+            <p>{errorExportacion}</p>
+          </div>
+        )}
+
+        {cargandoHistorial ? (
+          <p>Cargando historial de movimientos...</p>
+        ) : errorHistorial ? (
+          <div className="mensaje-error" role="alert">
+            <p>{errorHistorial} Recargá la página para volver a intentar.</p>
+          </div>
+        ) : movimientosFiltrados.length === 0 ? (
           <div className="estado-vacio">
             <h3>No hay movimientos para mostrar</h3>
             <p>
@@ -318,7 +520,9 @@ function Movimientos() {
                   .map((movimiento) => (
                     <tr key={movimiento.id}>
                       <td>
-                        {new Date(movimiento.fecha).toLocaleString("es-AR")}
+                        {new Date(movimiento.fecha).toLocaleString("es-AR", {
+                          hour12: false,
+                        })}
                       </td>
 
                       <td>{movimiento.productoNombre}</td>
