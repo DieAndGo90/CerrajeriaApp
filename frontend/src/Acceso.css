@@ -1,0 +1,102 @@
+.acceso-pantalla {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #0f172a, #1e3a5f);
+  font-family: Arial, sans-serif;
+}
+
+.acceso-tarjeta {
+  width: 100%;
+  max-width: 390px;
+  padding: 35px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.acceso-logo {
+  text-align: center;
+  font-size: 42px;
+}
+
+.acceso-tarjeta h1,
+.acceso-tarjeta h2,
+.acceso-tarjeta p {
+  text-align: center;
+  margin: 4px 0;
+}
+
+.acceso-tarjeta h1 {
+  color: #1e3a5f;
+}
+
+.acceso-tarjeta h2 {
+  margin-top: 22px;
+  font-size: 20px;
+}
+
+.acceso-tarjeta label {
+  font-weight: 600;
+  color: #334155;
+}
+
+.acceso-tarjeta input {
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.acceso-tarjeta input:focus {
+  outline: 2px solid #2563eb;
+}
+
+.acceso-ingresar {
+  background: #2563eb;
+  color: white;
+  padding: 13px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.acceso-ingresar:hover {
+  background: #1d4ed8;
+}
+
+.acceso-ingresar:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.acceso-tarjeta .acceso-error {
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.acceso-barra {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  padding: 10px 24px;
+  background: #142238;
+  color: white;
+}
+
+.acceso-barra button {
+  background: #334155;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+}

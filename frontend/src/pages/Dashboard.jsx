@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
+import { apiFetch } from "../apiFetch";
 
 function Dashboard() {
   const [totalProductos, setTotalProductos] = useState(0);
@@ -32,7 +33,7 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    fetch("http://localhost:8080/productos")
+    apiFetch("http://localhost:8080/productos")
       .then((respuesta) => {
         if (!respuesta.ok) {
           throw new Error("Error al cargar productos");
@@ -91,7 +92,7 @@ function Dashboard() {
   }, [recarga]);
 
   useEffect(() => {
-    fetch("http://localhost:8080/movimientos")
+    apiFetch("http://localhost:8080/movimientos")
       .then((respuesta) => {
         if (!respuesta.ok) {
           throw new Error("Error al cargar movimientos");

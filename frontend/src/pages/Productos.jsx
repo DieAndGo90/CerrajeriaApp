@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "../App.css";
 import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
+import { apiFetch } from "../apiFetch";
 
 const API_URL = "http://localhost:8080/productos";
 
@@ -25,7 +26,7 @@ function Productos() {
 
   // CARGAR PRODUCTOS DEL BACKEND
   useEffect(() => {
-    fetch(API_URL)
+    apiFetch(API_URL)
       .then((respuesta) => respuesta.json())
       .then((datos) => setProductos(datos))
       .catch((error) => {
@@ -56,7 +57,7 @@ function Productos() {
 
     setError("");
 
-    fetch(url, {
+    apiFetch(url, {
       method: metodo,
       headers: {
         "Content-Type": "application/json",
@@ -120,7 +121,7 @@ function Productos() {
   // ELIMINAR PRODUCTO
   const eliminarProducto = (id) => {
     setError("");
-    fetch(`${API_URL}/${id}`, {
+    apiFetch(`${API_URL}/${id}`, {
       method: "DELETE",
     })
       .then(async (respuesta) => {
@@ -161,7 +162,7 @@ function Productos() {
     setLoading(true);
     setError("");
 
-    fetch(url)
+    apiFetch(url)
       .then((respuesta) => {
         if (!respuesta.ok) {
           throw new Error("No se pudo realizar la búsqueda");
@@ -186,7 +187,7 @@ function Productos() {
     setLoading(true);
     setError("");
 
-    fetch(API_URL)
+    apiFetch(API_URL)
       .then((respuesta) => {
         if (!respuesta.ok) {
           throw new Error("No se pudieron cargar los productos");
@@ -215,7 +216,7 @@ function Productos() {
 
     try {
       // Consultar todo el inventario, no solo los resultados de la búsqueda.
-      const respuesta = await fetch(API_URL);
+      const respuesta = await apiFetch(API_URL);
 
       if (!respuesta.ok) {
         throw new Error("No se pudo consultar el inventario.");

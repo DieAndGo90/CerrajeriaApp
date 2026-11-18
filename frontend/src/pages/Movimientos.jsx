@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
+import { apiFetch } from "../apiFetch";
 
 const API_URL = "http://localhost:8080/productos";
 
@@ -24,7 +25,7 @@ function Movimientos() {
 
   // CARGAR PRODUCTOS DEL BACKEND
   useEffect(() => {
-    fetch(API_URL)
+    apiFetch(API_URL)
       .then((respuesta) => {
         if (!respuesta.ok) {
           throw new Error("No se pudieron cargar los productos");
@@ -46,7 +47,7 @@ function Movimientos() {
 
   // CARGAR HISTORIAL DE MOVIMIENTOS
   useEffect(() => {
-    fetch("http://localhost:8080/movimientos")
+    apiFetch("http://localhost:8080/movimientos")
       .then((respuesta) => {
         if (!respuesta.ok) {
           throw new Error("No se pudieron cargar los movimientos");
@@ -104,7 +105,7 @@ function Movimientos() {
     };
 
     try {
-      const respuesta = await fetch("http://localhost:8080/movimientos", {
+      const respuesta = await apiFetch("http://localhost:8080/movimientos", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -131,7 +132,7 @@ function Movimientos() {
 
       // ACTUALIZAR EL STOCK MOSTRADO
       try {
-        const respuestaProductos = await fetch(API_URL);
+        const respuestaProductos = await apiFetch(API_URL);
 
         if (respuestaProductos.ok) {
           const datos = await respuestaProductos.json();

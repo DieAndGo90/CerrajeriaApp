@@ -4,7 +4,7 @@ Sistema web de gestión de inventario para una cerrajería, desarrollado como pr
 
 El objetivo es construir una aplicación funcional que permita administrar productos, controlar existencias, registrar movimientos de stock y consultar costos, precios y rentabilidad estimada, aplicando buenas prácticas de desarrollo de software.
 
-Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de inventario, valorización de mercadería, estadísticas históricas, filtros por período y alertas de productos agotados. También permite actualizar masivamente los precios de venta y generar reportes Excel de inventario y movimientos de stock.
+Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de inventario, valorización de mercadería, estadísticas históricas, filtros por período y alertas de productos agotados. También permite actualizar masivamente los precios de venta, generar reportes Excel de inventario y movimientos de stock y **acceder mediante un login con sesiones protegidas por Spring Security**.
 
 ## 🛠️ Tecnologías
 
@@ -13,6 +13,7 @@ Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de i
 - Java 17
 - Spring Boot
 - Spring Web
+- Spring Security (autenticación, sesiones y protección CSRF)
 - Spring Data JPA
 - Hibernate
 - Maven
@@ -33,6 +34,21 @@ Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de i
 - MySQL
 
 ## ✅ Funcionalidades implementadas
+
+### Seguridad y autenticación de usuarios
+
+- Usuario administrador persistido en MySQL, con contraseña almacenada mediante hash BCrypt.
+- Roles `ADMIN` y `EMPLEADO` definidos en el backend (la autorización diferenciada por rol todavía está pendiente).
+- Creación del administrador inicial al arrancar el backend si aún no existe y se configuró la variable de entorno `CERRAJERIA_ADMIN_PASSWORD`.
+- Login desde React con nombre de usuario y contraseña, validado por Spring Security contra MySQL.
+- Autenticación mediante sesión HTTP y cookie `JSESSIONID` (sin JWT).
+- Protección de endpoints: las operaciones de productos, movimientos y actualización de precios exigen una sesión autenticada.
+- Protección CSRF activa en las solicitudes que modifican datos, incluyendo login y logout.
+- Configuración CORS para el frontend de desarrollo con envío de credenciales.
+- Verificación de sesión al cargar React y botón para cerrar sesión, invalidando la sesión del servidor.
+- Cliente reutilizable `frontend/src/apiFetch.js` para enviar cookies y tokens CSRF en las solicitudes al backend.
+
+**Estado actual de los permisos:** existe un rol para cada usuario, pero todavía no se aplican restricciones distintas para `ADMIN` y `EMPLEADO`. Actualmente, cualquier usuario autenticado tiene acceso a las operaciones protegidas; la separación de permisos se desarrollará en la etapa **12.4**.
 
 ### Actualización masiva de precios
 
@@ -186,6 +202,7 @@ Los reportes se generan desde React mediante ExcelJS y se descargan como archivo
 - Confirmación personalizada de eliminación.
 - Mensajes de éxito al registrar operaciones.
 - Comunicación con la API REST de Spring Boot.
+- Formulario de inicio de sesión y cierre de sesión, con verificación de la sesión al recargar la página.
 
 ## 📦 Modelo de datos
 
@@ -216,9 +233,21 @@ Cada movimiento contiene:
 
 Un producto puede tener múltiples movimientos asociados mediante una relación `ManyToOne` desde `MovimientoStock` hacia `Producto`.
 
+### Usuario
+
+Cada usuario contiene:
+
+- `id`
+- `username` (único)
+- `passwordHash` (persistido en la columna `password_hash`)
+- `rol` (`ADMIN` o `EMPLEADO`)
+- `activo`
+
+El hash BCrypt se almacena en la tabla `usuarios`; la contraseña original no se persiste.
+
 ## 🏗️ Arquitectura
 
-El backend utiliza una arquitectura por capas:
+El backend utiliza una arquitectura por capas, con **Spring Security** delante de los controladores para autenticar solicitudes y administrar sesiones:
 
 **Controller → Service → Repository → MySQL**
 
@@ -235,13 +264,24 @@ Se utilizan:
 - `MovimientoStockResponseDTO`
 - `ActualizacionPreciosDTO`
 
-El manejo global de excepciones se implementa mediante `GlobalExceptionHandler`.
+El manejo global de excepciones de negocio se implementa mediante `GlobalExceptionHandler`. La autenticación y los accesos no autenticados son gestionados por Spring Security a través de `SecurityConfig`, `UsuarioRepository` y `UserDetailsService`.
 
-El frontend está organizado en componentes y páginas React, separando la navegación y las páginas de Dashboard, Productos, Movimientos de Stock y Actualización de Precios.
+El frontend está organizado en componentes y páginas React, separando la navegación y las páginas de Dashboard, Productos, Movimientos de Stock y Actualización de Precios. El componente `Acceso.jsx` comprueba la sesión y presenta el login antes de mostrar `App.jsx`.
 
-El Dashboard reutiliza los endpoints `GET /productos` y `GET /movimientos` para calcular indicadores, agrupar movimientos por mes y filtrar estadísticas. Los reportes Excel reutilizan los datos de la API y se generan en el navegador mediante ExcelJS. La lógica común de creación de libros, hojas y descarga se concentra en `frontend/src/utils/excel.js`. No se requieren endpoints adicionales.
+El Dashboard reutiliza los endpoints `GET /productos` y `GET /movimientos` para calcular indicadores, agrupar movimientos por mes y filtrar estadísticas. Los reportes Excel reutilizan los datos de la API y se generan en el navegador mediante ExcelJS. La lógica común de creación de libros, hojas y descarga se concentra en `frontend/src/utils/excel.js`. No se requieren endpoints adicionales para los reportes.
 
 ## 🌐 Endpoints de la API REST
+
+### Autenticación y sesión
+
+| Método | Endpoint       | Descripción                                                                      |
+| ------ | -------------- | -------------------------------------------------------------------------------- |
+| GET    | `/auth/csrf`   | Obtener el token CSRF de la sesión                                               |
+| POST   | `/auth/login`  | Iniciar sesión con `username` y `password` (formulario URL encoded y token CSRF) |
+| GET    | `/auth/me`     | Consultar el usuario y sus autoridades, con sesión iniciada                      |
+| POST   | `/auth/logout` | Cerrar sesión e invalidarla (requiere token CSRF)                                |
+
+El login y el logout son procesados por Spring Security. Los endpoints de productos y movimientos requieren autenticación; las solicitudes que modifican datos también necesitan un token CSRF válido.
 
 ### Productos
 
@@ -274,6 +314,8 @@ La API utiliza códigos HTTP para comunicar el resultado de las operaciones.
 - `204 No Content`: eliminación exitosa.
 - `400 Bad Request`: datos inválidos, stock insuficiente u operación no permitida.
 - `404 Not Found`: recurso inexistente.
+- `401 Unauthorized`: acceso a un endpoint protegido sin sesión válida o credenciales de login incorrectas.
+- `403 Forbidden`: solicitud rechazada, por ejemplo, por un token CSRF ausente o inválido.
 
 Los errores se procesan mediante un manejador global de excepciones y se devuelven al frontend para mostrar mensajes informativos.
 
@@ -287,6 +329,7 @@ Tablas principales:
 
 - `productos`
 - `movimientos_stock`
+- `usuarios`
 
 La tabla `productos` almacena los datos principales de cada producto, incluyendo su precio de venta y costo de compra.
 
@@ -294,7 +337,7 @@ Los campos de ganancia bruta y margen porcentual no se almacenan en MySQL, ya qu
 
 La tabla `movimientos_stock` contiene una clave foránea `producto_id` que relaciona cada movimiento con su producto.
 
-Los cambios de stock se ejecutan mediante operaciones transaccionales para mantener la consistencia de los datos.
+Los cambios de stock se ejecutan mediante operaciones transaccionales para mantener la consistencia de los datos. La tabla `usuarios` conserva el nombre de usuario, el hash BCrypt, el rol y el estado de cada cuenta.
 
 ## 🧪 Pruebas realizadas
 
@@ -351,29 +394,55 @@ Se verificaron:
 - Comprobación de la exportación del historial completo y de los filtros combinados por tipo de movimiento y nombre de producto.
 - Comparación del resumen del historial con los registros exportados, incluyendo balances negativos cuando solo se seleccionan salidas.
 
+### Seguridad y autenticación
+
+- Creación del administrador inicial en MySQL sin duplicarlo al reiniciar Spring Boot.
+- Verificación de almacenamiento de la contraseña como hash BCrypt.
+- Acceso a `GET /productos` sin iniciar sesión: `401 Unauthorized`.
+- Obtención del token CSRF: `GET /auth/csrf` → `200 OK`.
+- Login del administrador desde Postman y React: `200 OK`.
+- Verificación de usuario y rol mediante `GET /auth/me` (`ROLE_ADMIN`).
+- Consulta de productos después de iniciar sesión: `200 OK`.
+- Logout con token CSRF: `204 No Content`.
+- Acceso a productos después del logout: `401 Unauthorized`.
+- Inicio y cierre de sesión desde React, incluidos los campos obligatorios del formulario.
+- Carga de Dashboard, Productos, Movimientos y Actualización de Precios con sesión iniciada.
+- Creación, edición y eliminación de un producto temporal desde React con sesión y CSRF.
+
 El backend también fue compilado y empaquetado correctamente mediante Maven durante las etapas anteriores.
 
 ## 📌 Estado actual
 
-**Backend MVP:** finalizado y ampliado con gestión de movimientos de stock, costos, precios, cálculos de rentabilidad y actualización masiva de precios.
+**Backend MVP:** finalizado y ampliado con movimientos de stock, costos, precios, cálculos de rentabilidad, actualización masiva de precios y autenticación mediante Spring Security.
 
-**Frontend React:** integrado con la API REST, con gestión de productos, registro e historial de movimientos, visualización de información comercial, Dashboard de gestión, actualización masiva de precios y generación de reportes Excel.
+**Frontend React:** integrado con la API REST, con Dashboard, productos, movimientos, actualización de precios, reportes Excel y pantalla de login con cierre de sesión.
 
-**Base de datos MySQL:** integrada y operativa en el entorno de desarrollo.
+**Base de datos MySQL:** integrada y operativa en desarrollo; incluye productos, movimientos y usuarios.
 
 **Etapas completadas:**
 
 - 09 — Dashboard de gestión.
 - 10 — Actualización masiva de precios.
 - 11 — Reportes y exportación a Excel.
+- 12.1 — Usuarios y contraseñas.
+- 12.2 — Seguridad del backend: login, sesiones, CSRF y logout.
+- 12.3 — Login y sesión en React, con integración de los cuatro módulos.
 
-El proyecto cuenta con una versión funcional de gestión de inventario, control de movimientos, consulta de rentabilidad estimada por producto, análisis de indicadores del negocio, actualización masiva de precios y exportación de reportes. La aplicación funciona en el entorno local de desarrollo; la autenticación, la preparación para producción y el despliegue quedan pendientes.
+El sistema funciona en el entorno local de desarrollo con autenticación. **Todavía falta autorizar las operaciones según el rol**, además de preparar la aplicación para producción y desplegarla.
+
+## 🖥️ Ejecución en desarrollo
+
+1. Iniciar MySQL (en desarrollo, mediante WampServer) y utilizar la base de datos `cerrajeria_db`.
+2. Ejecutar el backend Spring Boot desde IntelliJ IDEA. La API utiliza `http://localhost:8080`.
+3. Para crear el primer administrador, configurar en la ejecución del backend la variable de entorno `CERRAJERIA_ADMIN_PASSWORD` con una contraseña segura (al menos 12 caracteres). La creación inicial se omite si ya existe un usuario con rol `ADMIN`.
+4. Dentro de `frontend`, ejecutar `npm install` si es la primera vez y luego `npm run dev`.
+5. Abrir `http://localhost:5173` e iniciar sesión con el usuario `admin` y la contraseña configurada.
+
+La contraseña no se escribe en el código fuente ni se incluye en este README. Las URLs, permisos CORS y cookies deberán adaptarse antes del despliegue.
 
 ## 🚀 Próximas funcionalidades
 
-**Próxima etapa: 12 — Seguridad y autenticación de usuarios.**
-
-Se prevé incorporar autenticación y control de acceso mediante usuarios y roles, proteger las operaciones de la API REST y preparar el sistema para su uso en un entorno real.
+**Próximo bloque: 12.4 — Roles y permisos.** Aplicar autorización real en el backend y ajustar la interfaz según los permisos de `ADMIN` y `EMPLEADO`. Por ahora solamente está implementada la autenticación.
 
 Otras mejoras previstas para futuras etapas:
 
@@ -389,10 +458,12 @@ Estas funcionalidades todavía no forman parte de la versión actual.
 
 ## 🔎 Consideraciones antes del despliegue
 
-- Revisar las vulnerabilidades informadas por `npm audit` y evaluar las actualizaciones de dependencias compatibles con el proyecto.
-- Verificar que las fechas y horas de los reportes coincidan con las del historial en pantalla, incluyendo el formato de 24 horas y la zona horaria.
-- Configurar las URLs de la API y las credenciales de base de datos para cada entorno, sin exponer secretos en el repositorio.
-- Completar la autenticación y autorización antes de publicar la aplicación.
+- Implementar la autorización por roles en el **backend**, no solo ocultar botones en React.
+- Revisar las versiones y vulnerabilidades de Spring Boot, Spring Security y dependencias del frontend (`npm audit`); actualizar a versiones compatibles y mantenidas.
+- Configurar HTTPS, cookies seguras y una política CORS específica para el dominio de producción.
+- Configurar URLs de la API, credenciales de MySQL y secretos mediante variables de entorno o un mecanismo de gestión de secretos, sin subirlos a GitHub.
+- Revisar que las fechas y horas de los reportes coincidan con las del historial, incluyendo formato de 24 horas y zona horaria.
+- Probar nuevamente las operaciones sensibles con permisos diferenciados y completar las verificaciones de seguridad antes de publicar.
 
 ## 🎯 Objetivo del proyecto
 

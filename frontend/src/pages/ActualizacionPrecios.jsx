@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "../apiFetch";
 
 const API_URL = "http://localhost:8080/productos";
 
@@ -22,7 +23,7 @@ function ActualizacionPrecios() {
   useEffect(() => {
     const controller = new AbortController();
 
-    fetch(API_URL, { signal: controller.signal })
+    apiFetch(API_URL, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) {
           throw new Error("No se pudieron cargar los productos");
@@ -93,7 +94,7 @@ function ActualizacionPrecios() {
     setMensaje("");
 
     try {
-      const response = await fetch(`${API_URL}/actualizar-precios`, {
+      const response = await apiFetch(`${API_URL}/actualizar-precios`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
