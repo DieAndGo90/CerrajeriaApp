@@ -100,3 +100,30 @@
   padding: 8px 14px;
   cursor: pointer;
 }
+/* Navegación del empleado */
+
+.menu-empleado {
+  display: flex;
+  gap: 10px;
+  padding: 15px 24px;
+  background: #1e293b;
+  flex-wrap: wrap;
+}
+
+.menu-empleado button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #334155;
+  color: white;
+  cursor: pointer;
+}
+
+.menu-empleado button:hover {
+  background: #475569;
+}
+
+.menu-empleado button.activo {
+  background: #2563eb;
+  font-weight: bold;
+}

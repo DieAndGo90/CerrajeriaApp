@@ -2,6 +2,7 @@ package com.cerrajeria.cerrajeriaapp.controller;
 
 import com.cerrajeria.cerrajeriaapp.dto.ActualizacionPreciosDTO;
 import com.cerrajeria.cerrajeriaapp.dto.ProductoDTO;
+import com.cerrajeria.cerrajeriaapp.dto.ProductoStockDTO;
 import com.cerrajeria.cerrajeriaapp.service.ProductoService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -73,6 +74,11 @@ public class ProductoController {
         return ResponseEntity.ok(
                 Map.of("productosActualizados", cantidad)
         );
+    }
+
+    @GetMapping("/stock")
+    public List<ProductoStockDTO> listarStock() {
+        return productoService.listarStock();
     }
 
 }

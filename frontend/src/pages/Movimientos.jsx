@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
 import { apiFetch } from "../apiFetch";
 
-const API_URL = "http://localhost:8080/productos";
+const API_URL = "http://localhost:8080/productos/stock";
 
 function Movimientos() {
   const [productos, setProductos] = useState([]);

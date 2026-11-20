@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import App from "./App";
 import "./Acceso.css";
+import PanelEmpleado from "./pages/PanelEmpleado";
 
 const API_URL = "http://localhost:8080";
 
@@ -135,7 +136,13 @@ export default function Acceso() {
           <button onClick={cerrarSesion}>Cerrar sesión</button>
         </div>
 
-        <App />
+        {usuario.roles?.includes("ROLE_ADMIN") ? (
+          <App />
+        ) : usuario.roles?.includes("ROLE_EMPLEADO") ? (
+          <PanelEmpleado />
+        ) : (
+          <p>Tu usuario no tiene permisos asignados.</p>
+        )}
       </>
     );
   }

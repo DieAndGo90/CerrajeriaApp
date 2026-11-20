@@ -4,7 +4,7 @@ Sistema web de gestión de inventario para una cerrajería, desarrollado como pr
 
 El objetivo es construir una aplicación funcional que permita administrar productos, controlar existencias, registrar movimientos de stock y consultar costos, precios y rentabilidad estimada, aplicando buenas prácticas de desarrollo de software.
 
-Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de inventario, valorización de mercadería, estadísticas históricas, filtros por período y alertas de productos agotados. También permite actualizar masivamente los precios de venta, generar reportes Excel de inventario y movimientos de stock y **acceder mediante un login con sesiones protegidas por Spring Security**.
+Actualmente, CerrajeriaApp incluye un Dashboard administrativo con indicadores de inventario, valorización de mercadería, estadísticas históricas, filtros por período y alertas de productos agotados. Permite gestionar productos y movimientos de stock, actualizar masivamente los precios de venta y generar reportes Excel. También cuenta con **autenticación mediante Spring Security y permisos diferenciados para ADMIN y EMPLEADO**: el empleado puede operar con productos, precios de venta y movimientos sin acceder a costos, márgenes ni rentabilidad.
 
 ## 🛠️ Tecnologías
 
@@ -37,18 +37,33 @@ Actualmente, CerrajeriaApp incluye un Dashboard de gestión con indicadores de i
 
 ### Seguridad y autenticación de usuarios
 
-- Usuario administrador persistido en MySQL, con contraseña almacenada mediante hash BCrypt.
-- Roles `ADMIN` y `EMPLEADO` definidos en el backend (la autorización diferenciada por rol todavía está pendiente).
-- Creación del administrador inicial al arrancar el backend si aún no existe y se configuró la variable de entorno `CERRAJERIA_ADMIN_PASSWORD`.
+- Usuarios `ADMIN` y `EMPLEADO` persistidos en MySQL, con contraseñas almacenadas mediante hash BCrypt.
+- Creación del administrador inicial al arrancar el backend si todavía no existe y se configuró `CERRAJERIA_ADMIN_PASSWORD`.
+- Usuario empleado configurado con contraseña inicial mediante la variable de entorno `CERRAJERIA_EMPLEADO_PASSWORD`.
 - Login desde React con nombre de usuario y contraseña, validado por Spring Security contra MySQL.
 - Autenticación mediante sesión HTTP y cookie `JSESSIONID` (sin JWT).
-- Protección de endpoints: las operaciones de productos, movimientos y actualización de precios exigen una sesión autenticada.
-- Protección CSRF activa en las solicitudes que modifican datos, incluyendo login y logout.
-- Configuración CORS para el frontend de desarrollo con envío de credenciales.
-- Verificación de sesión al cargar React y botón para cerrar sesión, invalidando la sesión del servidor.
-- Cliente reutilizable `frontend/src/apiFetch.js` para enviar cookies y tokens CSRF en las solicitudes al backend.
+- Protección CSRF activa para solicitudes que modifican datos, incluyendo login y logout.
+- Configuración CORS para el frontend de desarrollo, con envío de credenciales.
+- Verificación de sesión al cargar React y botón de cierre de sesión que invalida la sesión del servidor.
+- Cliente reutilizable `frontend/src/apiFetch.js` para enviar cookies y tokens CSRF al backend.
+- Autorización real de endpoints desde `SecurityConfig.java`, además de interfaces React diferenciadas según el rol.
 
-**Estado actual de los permisos:** existe un rol para cada usuario, pero todavía no se aplican restricciones distintas para `ADMIN` y `EMPLEADO`. Actualmente, cualquier usuario autenticado tiene acceso a las operaciones protegidas; la separación de permisos se desarrollará en la etapa **12.4**.
+**Permisos por rol:**
+
+| Funcionalidad                                                    | ADMIN | EMPLEADO |
+| ---------------------------------------------------------------- | :---: | :------: |
+| Consultar productos, stock y precios de venta                    |  ✅   |    ✅    |
+| Crear y editar productos; eliminar solo si no tienen movimientos |  ✅   |    ✅    |
+| Registrar y consultar movimientos de stock                       |  ✅   |    ✅    |
+| Exportar inventario (detalle según rol)                          |  ✅   |    ✅    |
+| Consultar costos, ganancias y márgenes                           |  ✅   |    ❌    |
+| Acceder al Dashboard económico                                   |  ✅   |    ❌    |
+| Actualizar masivamente los precios                               |  ✅   |    ❌    |
+| Acceder a los endpoints administrativos de productos             |  ✅   |    ❌    |
+
+El administrador utiliza la interfaz completa de CerrajeriaApp. El empleado utiliza un panel con **Inventario** y **Movimientos de Stock**, que muestra solamente los datos necesarios para operar.
+
+La API operativa (`/operativo/productos`) emplea DTO específicos para permitir el CRUD sin exponer ni permitir la asignación de `costoCompra`. Los endpoints administrativos (`/productos`, excepto las consultas de stock autorizadas) permanecen restringidos al administrador. Esta protección se aplica en Spring Boot: ocultar campos en React no es la única medida de seguridad.
 
 ### Actualización masiva de precios
 
@@ -91,13 +106,14 @@ El valor potencial de venta se obtiene multiplicando el stock por el precio de v
 - Crear y listar productos.
 - Buscar productos por ID mediante la API REST.
 - Buscar productos por nombre desde React.
-- Editar nombre, precio de venta y costo de compra.
+- Editar nombre y precio de venta; el costo de compra queda reservado al administrador.
 - Eliminar productos sin movimientos asociados.
 - Confirmación antes de eliminar.
 - Indicadores visuales de productos sin stock.
 - Contador de productos registrados.
 - Validaciones y mensajes de éxito o error.
-- Exportación del inventario completo a Excel, independientemente de la búsqueda activa.
+- Exportación del inventario completo a Excel, independientemente de la búsqueda activa, con información económica exclusiva de ADMIN.
+- Gestión operativa de productos por EMPLEADO mediante una interfaz con ID, nombre, stock y precio de venta, búsqueda y acciones CRUD.
 
 ### Gestión de movimientos de stock
 
@@ -121,7 +137,7 @@ El valor potencial de venta se obtiene multiplicando el stock por el precio de v
 - Actualizar el costo de compra de productos existentes.
 - Calcular automáticamente la ganancia bruta por unidad.
 - Calcular el margen bruto porcentual sobre el precio de venta.
-- Mostrar costos, ganancias y márgenes en el inventario de React.
+- Mostrar costos, ganancias y márgenes únicamente en el inventario del administrador.
 - Diferenciar productos sin costo registrado de productos con costo igual a cero.
 - Mostrar "Sin registrar" y "Sin calcular" cuando corresponda.
 - Validar que los costos de compra no sean negativos.
@@ -177,8 +193,8 @@ Los reportes se generan desde React mediante ExcelJS y se descargan como archivo
 - No se permiten salidas superiores al stock disponible.
 - El stock no puede quedar negativo mediante los movimientos.
 - Los cambios de stock de productos existentes se realizan mediante movimientos registrados.
-- La edición de productos permite modificar nombre, precio y costo, pero no directamente el stock.
-- Los productos con movimientos registrados no pueden eliminarse.
+- ADMIN puede editar nombre, precio y costo; EMPLEADO puede editar nombre y precio de venta, pero no el costo. Ninguno modifica el stock directamente durante la edición.
+- Los productos con movimientos registrados no pueden eliminarse, independientemente del rol.
 - Los productos nuevos con stock inicial positivo generan automáticamente un movimiento de entrada con la observación "Stock inicial".
 - La creación del producto y el registro de su stock inicial se realizan dentro de una misma transacción.
 - El precio de venta debe ser mayor que cero.
@@ -192,17 +208,18 @@ Los reportes se generan desde React mediante ExcelJS y se descargan como archivo
 
 ### Interfaz y experiencia de usuario
 
-- Navegación lateral entre Dashboard, Productos, Movimientos de Stock y Actualizar precios, con el Dashboard como pantalla inicial.
+- Para ADMIN, navegación lateral entre Dashboard, Productos, Movimientos de Stock y Actualizar precios, con el Dashboard como pantalla inicial.
+- Para EMPLEADO, panel propio con navegación entre Inventario y Movimientos de Stock.
 - Interfaz responsive para escritorio y dispositivos móviles.
 - Formularios con validaciones.
 - Estados de carga y mensajes de error.
 - Tablas de inventario e historial.
-- Tabla de productos con precio, costo de compra, ganancia bruta y margen porcentual.
+- Tabla administrativa con precio, costo de compra, ganancia bruta y margen porcentual; tabla operativa del empleado sin datos económicos privados.
 - Desplazamiento horizontal de tablas en pantallas pequeñas.
 - Confirmación personalizada de eliminación.
 - Mensajes de éxito al registrar operaciones.
 - Comunicación con la API REST de Spring Boot.
-- Formulario de inicio de sesión y cierre de sesión, con verificación de la sesión al recargar la página.
+- Formulario de inicio y cierre de sesión, con verificación de la sesión al recargar la página y visualización de pantallas según el rol.
 
 ## 📦 Modelo de datos
 
@@ -247,28 +264,31 @@ El hash BCrypt se almacena en la tabla `usuarios`; la contraseña original no se
 
 ## 🏗️ Arquitectura
 
-El backend utiliza una arquitectura por capas, con **Spring Security** delante de los controladores para autenticar solicitudes y administrar sesiones:
+El backend utiliza una arquitectura por capas, con **Spring Security** delante de los controladores para autenticar solicitudes, administrar sesiones y comprobar permisos:
 
 **Controller → Service → Repository → MySQL**
 
-- **Controller:** expone los endpoints REST y recibe solicitudes HTTP.
-- **Service:** implementa las reglas de negocio, las operaciones de stock y los cálculos de rentabilidad.
+- **Controller:** expone endpoints REST y recibe solicitudes HTTP.
+- **Service:** implementa reglas de negocio, operaciones de stock y cálculos de rentabilidad.
 - **Repository:** gestiona el acceso a MySQL mediante Spring Data JPA.
 - **Entity:** representa los datos persistidos.
-- **DTO:** permite intercambiar datos entre el backend y el frontend.
+- **DTO:** define los datos que pueden enviarse o devolverse sin exponer campos innecesarios.
 
-Se utilizan:
+Entre los DTO utilizados se encuentran:
 
-- `ProductoDTO`
-- `MovimientoStockDTO`
-- `MovimientoStockResponseDTO`
-- `ActualizacionPreciosDTO`
+- `ProductoDTO` (información completa de productos para el administrador).
+- `ProductoStockDTO` (consulta básica de ID, nombre y stock).
+- `ProductoOperativoRequestDTO` y `ProductoOperativoResponseDTO` (gestión de productos sin costos ni márgenes).
+- `MovimientoStockDTO` y `MovimientoStockResponseDTO`.
+- `ActualizacionPreciosDTO`.
 
-El manejo global de excepciones de negocio se implementa mediante `GlobalExceptionHandler`. La autenticación y los accesos no autenticados son gestionados por Spring Security a través de `SecurityConfig`, `UsuarioRepository` y `UserDetailsService`.
+La gestión operativa utiliza `ProductoOperativoController` y reutiliza las reglas de `ProductoService`, sin duplicar el CRUD ni los repositorios. La autorización por roles se centraliza en `SecurityConfig`.
 
-El frontend está organizado en componentes y páginas React, separando la navegación y las páginas de Dashboard, Productos, Movimientos de Stock y Actualización de Precios. El componente `Acceso.jsx` comprueba la sesión y presenta el login antes de mostrar `App.jsx`.
+El manejo global de excepciones de negocio se implementa mediante `GlobalExceptionHandler`. La autenticación y los accesos no autorizados son gestionados por Spring Security, con `UsuarioRepository` y `UserDetailsService`.
 
-El Dashboard reutiliza los endpoints `GET /productos` y `GET /movimientos` para calcular indicadores, agrupar movimientos por mes y filtrar estadísticas. Los reportes Excel reutilizan los datos de la API y se generan en el navegador mediante ExcelJS. La lógica común de creación de libros, hojas y descarga se concentra en `frontend/src/utils/excel.js`. No se requieren endpoints adicionales para los reportes.
+El frontend está organizado en componentes y páginas React. `Acceso.jsx` comprueba la sesión y presenta el login; después muestra `App.jsx` para ADMIN o `PanelEmpleado.jsx` para EMPLEADO. El panel del empleado reutiliza `Movimientos.jsx` y ofrece `InventarioEmpleado.jsx` para el CRUD operativo.
+
+El Dashboard administrativo reutiliza los endpoints `GET /productos` y `GET /movimientos` para calcular indicadores, agrupar movimientos por mes y filtrar estadísticas. Los reportes Excel se generan en el navegador mediante ExcelJS. La lógica común de creación de libros, hojas y descargas se concentra en `frontend/src/utils/excel.js`.
 
 ## 🌐 Endpoints de la API REST
 
@@ -278,32 +298,47 @@ El Dashboard reutiliza los endpoints `GET /productos` y `GET /movimientos` para 
 | ------ | -------------- | -------------------------------------------------------------------------------- |
 | GET    | `/auth/csrf`   | Obtener el token CSRF de la sesión                                               |
 | POST   | `/auth/login`  | Iniciar sesión con `username` y `password` (formulario URL encoded y token CSRF) |
-| GET    | `/auth/me`     | Consultar el usuario y sus autoridades, con sesión iniciada                      |
+| GET    | `/auth/me`     | Consultar el usuario autenticado y sus roles                                     |
 | POST   | `/auth/logout` | Cerrar sesión e invalidarla (requiere token CSRF)                                |
 
-El login y el logout son procesados por Spring Security. Los endpoints de productos y movimientos requieren autenticación; las solicitudes que modifican datos también necesitan un token CSRF válido.
+El login y el logout son procesados por Spring Security. Las operaciones protegidas requieren una sesión válida; las solicitudes que modifican datos también necesitan un token CSRF válido.
 
-### Productos
+### Productos administrativos — solo ADMIN
 
 | Método | Endpoint                        | Descripción                                         |
 | ------ | ------------------------------- | --------------------------------------------------- |
 | POST   | `/productos`                    | Crear producto con precio de venta y costo opcional |
-| GET    | `/productos`                    | Listar productos con información comercial          |
+| GET    | `/productos`                    | Listar productos con información económica          |
 | GET    | `/productos/{id}`               | Buscar producto por ID                              |
 | GET    | `/productos/buscar?nombre=...`  | Buscar productos por nombre                         |
 | PUT    | `/productos/{id}`               | Editar nombre, precio y costo de compra             |
 | DELETE | `/productos/{id}`               | Eliminar producto sin movimientos asociados         |
-| POST   | `/productos/actualizar-precios` | Aplicar un aumento porcentual a todos los productos |
+| POST   | `/productos/actualizar-precios` | Aplicar aumento porcentual a todo el inventario     |
 
-Las respuestas de productos incluyen la ganancia bruta y el margen porcentual calculados cuando existe información suficiente.
+Estas respuestas incluyen ganancia bruta y margen porcentual calculados cuando se dispone de costo registrado.
 
-### Movimientos de stock
+### Productos operativos — ADMIN y EMPLEADO
+
+| Método | Endpoint                    | Descripción                                                     |
+| ------ | --------------------------- | --------------------------------------------------------------- |
+| GET    | `/productos/stock`          | Listar únicamente ID, nombre y stock                            |
+| GET    | `/operativo/productos`      | Listar ID, nombre, stock y precio de venta                      |
+| GET    | `/operativo/productos/{id}` | Consultar un producto sin datos económicos privados             |
+| POST   | `/operativo/productos`      | Crear producto sin permitir establecer costos                   |
+| PUT    | `/operativo/productos/{id}` | Editar nombre y precio de venta, conservando el costo existente |
+| DELETE | `/operativo/productos/{id}` | Eliminar producto si no tiene movimientos asociados             |
+
+Los endpoints operativos devuelven datos limitados por DTO. Un `costoCompra` enviado manualmente en una solicitud operativa no se asigna al producto.
+
+### Movimientos de stock — ADMIN y EMPLEADO
 
 | Método | Endpoint                             | Descripción                          |
 | ------ | ------------------------------------ | ------------------------------------ |
 | POST   | `/movimientos`                       | Registrar entrada o salida           |
 | GET    | `/movimientos`                       | Listar movimientos                   |
 | GET    | `/movimientos/producto/{productoId}` | Consultar movimientos de un producto |
+
+Las operaciones de modificación requieren sesión válida y protección CSRF.
 
 ## 📡 Respuestas HTTP
 
@@ -315,7 +350,7 @@ La API utiliza códigos HTTP para comunicar el resultado de las operaciones.
 - `400 Bad Request`: datos inválidos, stock insuficiente u operación no permitida.
 - `404 Not Found`: recurso inexistente.
 - `401 Unauthorized`: acceso a un endpoint protegido sin sesión válida o credenciales de login incorrectas.
-- `403 Forbidden`: solicitud rechazada, por ejemplo, por un token CSRF ausente o inválido.
+- `403 Forbidden`: acceso denegado por permisos insuficientes o por token CSRF ausente o inválido.
 
 Los errores se procesan mediante un manejador global de excepciones y se devuelven al frontend para mostrar mensajes informativos.
 
@@ -397,25 +432,29 @@ Se verificaron:
 ### Seguridad y autenticación
 
 - Creación del administrador inicial en MySQL sin duplicarlo al reiniciar Spring Boot.
-- Verificación de almacenamiento de la contraseña como hash BCrypt.
+- Verificación de almacenamiento de contraseñas como hashes BCrypt.
 - Acceso a `GET /productos` sin iniciar sesión: `401 Unauthorized`.
 - Obtención del token CSRF: `GET /auth/csrf` → `200 OK`.
-- Login del administrador desde Postman y React: `200 OK`.
-- Verificación de usuario y rol mediante `GET /auth/me` (`ROLE_ADMIN`).
-- Consulta de productos después de iniciar sesión: `200 OK`.
-- Logout con token CSRF: `204 No Content`.
-- Acceso a productos después del logout: `401 Unauthorized`.
+- Login de ADMIN y EMPLEADO desde Postman y React: `200 OK`.
+- Verificación del usuario y rol mediante `GET /auth/me` (`ROLE_ADMIN` y `ROLE_EMPLEADO`).
+- Logout con token CSRF: `204 No Content`; acceso posterior a productos protegidos: `401 Unauthorized`.
 - Inicio y cierre de sesión desde React, incluidos los campos obligatorios del formulario.
-- Carga de Dashboard, Productos, Movimientos y Actualización de Precios con sesión iniciada.
-- Creación, edición y eliminación de un producto temporal desde React con sesión y CSRF.
+- Acceso del administrador a Dashboard, Productos, Movimientos y Actualización de Precios.
+- Acceso del empleado al inventario operativo y al historial de movimientos, sin mostrar información económica.
+- Consulta de `GET /productos/stock` como empleado: `200 OK`, con ID, nombre y stock.
+- Creación, edición y eliminación de productos temporales desde el perfil EMPLEADO, conservando la restricción de eliminación cuando hay historial.
+- Edición del precio de venta de un producto existente como empleado: costo de compra y stock conservados; posterior verificación como administrador.
+- Intento de edición mediante el endpoint administrativo `PUT /productos/{id}` con sesión de empleado: `403 Forbidden`.
+- Envío intencional de `costoCompra` en `POST /operativo/productos`: `201 Created`, respuesta sin costo y comprobación posterior como administrador de que quedó **sin costo registrado**.
+- Eliminación de los productos temporales utilizados en estas pruebas.
 
 El backend también fue compilado y empaquetado correctamente mediante Maven durante las etapas anteriores.
 
 ## 📌 Estado actual
 
-**Backend MVP:** finalizado y ampliado con movimientos de stock, costos, precios, cálculos de rentabilidad, actualización masiva de precios y autenticación mediante Spring Security.
+**Backend MVP:** finalizado y ampliado con movimientos de stock, costos, precios, rentabilidad estimada, actualización masiva de precios, autenticación mediante Spring Security y autorización por roles con una API operativa separada.
 
-**Frontend React:** integrado con la API REST, con Dashboard, productos, movimientos, actualización de precios, reportes Excel y pantalla de login con cierre de sesión.
+**Frontend React:** integrado con la API REST, con Dashboard y gestión administrativa, reportes Excel, login/logout y panel operativo de empleado con inventario, precios de venta y movimientos de stock.
 
 **Base de datos MySQL:** integrada y operativa en desarrollo; incluye productos, movimientos y usuarios.
 
@@ -426,44 +465,45 @@ El backend también fue compilado y empaquetado correctamente mediante Maven dur
 - 11 — Reportes y exportación a Excel.
 - 12.1 — Usuarios y contraseñas.
 - 12.2 — Seguridad del backend: login, sesiones, CSRF y logout.
-- 12.3 — Login y sesión en React, con integración de los cuatro módulos.
+- 12.3 — Login y sesión en React, con integración de los módulos.
+- 12.4 — Permisos por rol, API operativa y pantallas para el empleado; pruebas funcionales y de protección de costos.
 
-El sistema funciona en el entorno local de desarrollo con autenticación. **Todavía falta autorizar las operaciones según el rol**, además de preparar la aplicación para producción y desplegarla.
+La aplicación funciona en el entorno local de desarrollo. **Aún no está desplegada en producción** y quedan verificaciones de seguridad y configuración antes de publicarla.
 
 ## 🖥️ Ejecución en desarrollo
 
 1. Iniciar MySQL (en desarrollo, mediante WampServer) y utilizar la base de datos `cerrajeria_db`.
 2. Ejecutar el backend Spring Boot desde IntelliJ IDEA. La API utiliza `http://localhost:8080`.
-3. Para crear el primer administrador, configurar en la ejecución del backend la variable de entorno `CERRAJERIA_ADMIN_PASSWORD` con una contraseña segura (al menos 12 caracteres). La creación inicial se omite si ya existe un usuario con rol `ADMIN`.
+3. Para crear los usuarios iniciales, configurar las variables de entorno `CERRAJERIA_ADMIN_PASSWORD` y `CERRAJERIA_EMPLEADO_PASSWORD` con contraseñas seguras de al menos 12 caracteres (preferentemente diferentes). Si los usuarios ya existen, su creación inicial se omite.
 4. Dentro de `frontend`, ejecutar `npm install` si es la primera vez y luego `npm run dev`.
-5. Abrir `http://localhost:5173` e iniciar sesión con el usuario `admin` y la contraseña configurada.
+5. Abrir `http://localhost:5173` e iniciar sesión como `admin` o `empleado`, según la interfaz que se quiera utilizar.
 
-La contraseña no se escribe en el código fuente ni se incluye en este README. Las URLs, permisos CORS y cookies deberán adaptarse antes del despliegue.
+Las contraseñas **no se escriben en el código fuente ni se incluyen en el README**. Las URLs, permisos CORS y cookies deberán adaptarse antes del despliegue.
 
 ## 🚀 Próximas funcionalidades
 
-**Próximo bloque: 12.4 — Roles y permisos.** Aplicar autorización real en el backend y ajustar la interfaz según los permisos de `ADMIN` y `EMPLEADO`. Por ahora solamente está implementada la autenticación.
+**Etapa 13 — Activación y desactivación de productos.** Ambos roles podrán activar y desactivar productos sin perder su historial. Se incorporarán filtros por estado y conteos de productos activos e inactivos al Dashboard administrativo. Se definirán reglas para stock remanente y movimientos sobre productos inactivos.
 
-Otras mejoras previstas para futuras etapas:
+**Etapa 14 — Stock mínimo y alertas de reposición.** Ambos roles podrán visualizar las alertas y consultar los productos que necesitan reposición.
 
-- Alertas de stock mínimo.
-- Registro de ventas e ingresos.
-- Gestión de proveedores.
-- Importación y actualización de listas de precios de proveedores.
-- Historial de cambios de costos y precios.
-- Mejoras adicionales de experiencia de usuario.
-- Preparación y despliegue de la aplicación.
+**Etapa 15 — Auditoría de acciones por usuario.** Historial de operaciones con usuario, fecha y detalle; consulta exclusiva del administrador.
 
-Estas funcionalidades todavía no forman parte de la versión actual.
+**Etapa 16 — Ajustes de inventario.** Corrección de diferencias entre stock registrado y conteo físico, con motivo obligatorio y trazabilidad.
+
+**Etapa 17 — Preparación y despliegue.** Configuración de producción, seguridad, respaldo de datos y puesta en línea.
+
+**Mejoras posibles posteriores:** gestión de proveedores, importación de listas de precios y registro de ventas. Estas funcionalidades **todavía no forman parte de la versión implementada**.
 
 ## 🔎 Consideraciones antes del despliegue
 
-- Implementar la autorización por roles en el **backend**, no solo ocultar botones en React.
 - Revisar las versiones y vulnerabilidades de Spring Boot, Spring Security y dependencias del frontend (`npm audit`); actualizar a versiones compatibles y mantenidas.
 - Configurar HTTPS, cookies seguras y una política CORS específica para el dominio de producción.
 - Configurar URLs de la API, credenciales de MySQL y secretos mediante variables de entorno o un mecanismo de gestión de secretos, sin subirlos a GitHub.
+- Revisar la estrategia de aprovisionamiento y administración de usuarios iniciales antes de operar con datos reales.
+- Restringir y probar las operaciones de cada rol tanto en React como directamente contra la API REST.
 - Revisar que las fechas y horas de los reportes coincidan con las del historial, incluyendo formato de 24 horas y zona horaria.
-- Probar nuevamente las operaciones sensibles con permisos diferenciados y completar las verificaciones de seguridad antes de publicar.
+- Preparar copias de seguridad y una forma de restaurar la base de datos.
+- Realizar pruebas adicionales de seguridad y funcionamiento antes de publicar.
 
 ## 🎯 Objetivo del proyecto
 

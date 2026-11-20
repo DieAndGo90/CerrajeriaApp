@@ -1,6 +1,7 @@
 package com.cerrajeria.cerrajeriaapp.service;
 
 import com.cerrajeria.cerrajeriaapp.dto.ProductoDTO;
+import com.cerrajeria.cerrajeriaapp.dto.ProductoStockDTO;
 import com.cerrajeria.cerrajeriaapp.entity.Producto;
 import com.cerrajeria.cerrajeriaapp.exception.ProductoNoEncontradoException;
 import com.cerrajeria.cerrajeriaapp.repository.ProductoRepository;
@@ -196,5 +197,15 @@ public class ProductoService {
         return producto;
     }
 
+    public List<ProductoStockDTO> listarStock() {
+        return productoRepository.findAll()
+                .stream()
+                .map(producto -> new ProductoStockDTO(
+                        producto.getId(),
+                        producto.getNombre(),
+                        producto.getStock()
+                ))
+                .toList();
+    }
 
 }

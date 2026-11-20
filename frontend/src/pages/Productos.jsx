@@ -516,7 +516,7 @@ function Productos() {
             <input
               type="number"
               min="0"
-              step="1"
+              step="0.01"
               value={precio}
               onChange={(e) => setPrecio(e.target.value)}
               placeholder="Ej: 14500"

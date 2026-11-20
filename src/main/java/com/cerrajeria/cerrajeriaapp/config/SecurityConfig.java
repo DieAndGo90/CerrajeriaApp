@@ -5,6 +5,7 @@ import com.cerrajeria.cerrajeriaapp.repository.UsuarioRepository;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 
 import org.springframework.security.config.Customizer;
@@ -88,11 +89,48 @@ public class SecurityConfig {
                 .csrf(Customizer.withDefaults())
 
                 .authorizeHttpRequests(auth -> auth
+
+                        // Login y obtención del token CSRF
                         .requestMatchers(
                                 "/auth/csrf",
                                 "/auth/login"
                         ).permitAll()
-                        .anyRequest().authenticated()
+
+                        // Consultar el usuario autenticado
+                        .requestMatchers("/auth/me")
+                        .authenticated()
+
+                        // Consultar stock: ADMIN y EMPLEADO
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/productos/stock"
+                        )
+                        .hasAnyRole("ADMIN", "EMPLEADO")
+
+                        // Gestión operativa: ADMIN y EMPLEADO
+                        .requestMatchers(
+                                "/operativo/productos",
+                                "/operativo/productos/**"
+                        )
+                        .hasAnyRole("ADMIN", "EMPLEADO")
+
+                        // Productos: temporalmente solo ADMIN
+                        .requestMatchers("/productos", "/productos/**")
+                        .hasRole("ADMIN")
+
+                        // Consultar movimientos
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/movimientos",
+                                "/movimientos/**"
+                        ).hasAnyRole("ADMIN", "EMPLEADO")
+
+                        // Registrar entradas y salidas
+                        .requestMatchers(HttpMethod.POST, "/movimientos")
+                        .hasAnyRole("ADMIN", "EMPLEADO")
+
+                        // Cualquier otra ruta no autorizada expresamente
+                        .anyRequest().denyAll()
                 )
 
                 .formLogin(form -> form
