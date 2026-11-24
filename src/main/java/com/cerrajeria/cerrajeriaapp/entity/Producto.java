@@ -24,4 +24,7 @@ public class Producto {
     private BigDecimal precio;
 
     private BigDecimal costoCompra;
+
+    @Column(nullable = false)
+    private boolean activo = true;
 }

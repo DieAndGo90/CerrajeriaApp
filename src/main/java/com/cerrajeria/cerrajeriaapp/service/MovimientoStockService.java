@@ -44,7 +44,13 @@ public class MovimientoStockService {
 
         Producto producto = productoRepository.findById(productoId)
                 .orElseThrow(() -> new ProductoNoEncontradoException(productoId));
-
+        //validar que el producto esté activo
+        if (!producto.isActivo()) {
+            throw new IllegalArgumentException(
+                    "No se pueden registrar movimientos en un producto inactivo"
+            );
+        }
+        //registrar entrada
         if (tipo == TipoMovimiento.ENTRADA) {
             producto.setStock(producto.getStock() + cantidad);
         }

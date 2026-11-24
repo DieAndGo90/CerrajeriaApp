@@ -65,6 +65,24 @@ public class ProductoOperativoController {
         return convertirRespuesta(actualizado);
     }
 
+    @PatchMapping("/{id}/activar")
+    public ProductoOperativoResponseDTO activar(
+            @PathVariable Long id) {
+
+        return convertirRespuesta(
+                productoService.cambiarEstadoProducto(id, true)
+        );
+    }
+
+    @PatchMapping("/{id}/desactivar")
+    public ProductoOperativoResponseDTO desactivar(
+            @PathVariable Long id) {
+
+        return convertirRespuesta(
+                productoService.cambiarEstadoProducto(id, false)
+        );
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         productoService.eliminarProducto(id);
@@ -79,7 +97,6 @@ public class ProductoOperativoController {
         dto.setStock(datos.stock());
         dto.setPrecio(datos.precio());
 
-        // El empleado nunca envía costos al servicio.
         dto.setCostoCompra(null);
 
         return dto;
@@ -92,7 +109,8 @@ public class ProductoOperativoController {
                 producto.getId(),
                 producto.getNombre(),
                 producto.getStock(),
-                producto.getPrecio()
+                producto.getPrecio(),
+                producto.isActivo()
         );
     }
 }

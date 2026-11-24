@@ -1,0 +1,107 @@
+/* Etapa 13: estado y filtro de productos. Estilos aislados del resto del sistema. */
+.producto-filtro-estado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 14px 18px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.producto-filtro-estado label {
+  font-weight: 600;
+  color: #334155;
+}
+
+.producto-filtro-estado select {
+  min-width: 185px;
+  padding: 9px 12px;
+  background: #fff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.producto-filtro-ayuda {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.producto-estado-insignia {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.producto-estado-activo {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.producto-estado-inactivo {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.producto-fila-inactiva {
+  background: #fafafa;
+}
+
+.producto-boton-estado {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.producto-boton-desactivar {
+  color: #9a3412;
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.producto-boton-desactivar:hover:not(:disabled) {
+  background: #ffedd5;
+}
+
+.producto-boton-activar {
+  color: #166534;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.producto-boton-activar:hover:not(:disabled) {
+  background: #dcfce7;
+}
+
+.producto-boton-estado:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 700px) {
+  .producto-filtro-estado {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .producto-filtro-estado select {
+    width: 100%;
+  }
+}

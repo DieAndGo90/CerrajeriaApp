@@ -4,6 +4,8 @@ import { apiFetch } from "../apiFetch";
 
 function Dashboard() {
   const [totalProductos, setTotalProductos] = useState(0);
+  const [productosActivos, setProductosActivos] = useState(0);
+  const [productosInactivos, setProductosInactivos] = useState(0);
   const [totalUnidades, setTotalUnidades] = useState(0);
   const [productosSinStock, setProductosSinStock] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -43,14 +45,24 @@ function Dashboard() {
       .then((productos) => {
         setTotalProductos(productos.length);
 
+        setProductosActivos(
+          productos.filter((producto) => producto.activo === true).length,
+        );
+
+        setProductosInactivos(
+          productos.filter((producto) => producto.activo === false).length,
+        );
+
         const unidades = productos.reduce(
           (total, producto) => total + Number(producto.stock ?? 0),
           0,
         );
 
         setTotalUnidades(unidades);
+
         const agotados = productos.filter(
-          (producto) => Number(producto.stock) === 0,
+          (producto) =>
+            producto.activo === true && Number(producto.stock) === 0,
         );
 
         setProductosSinStock(agotados.length);
@@ -347,6 +359,38 @@ function Dashboard() {
           <div className="tabla-card">
             <div className="tabla-encabezado">
               <div>
+                <h3>Productos activos</h3>
+                <p>Productos habilitados para operar.</p>
+              </div>
+
+              <span className="stock-badge stock-disponible">
+                {productosActivos} activos
+              </span>
+            </div>
+          </div>
+
+          <div className="tabla-card">
+            <div className="tabla-encabezado">
+              <div>
+                <h3>Productos inactivos</h3>
+                <p>Productos deshabilitados temporalmente.</p>
+              </div>
+
+              <span
+                className="stock-badge"
+                style={{
+                  backgroundColor: "#fef3c7",
+                  color: "#92400e",
+                }}
+              >
+                {productosInactivos} inactivos
+              </span>
+            </div>
+          </div>
+
+          <div className="tabla-card">
+            <div className="tabla-encabezado">
+              <div>
                 <h3>Unidades en stock</h3>
                 <p>Cantidad total disponible en el inventario.</p>
               </div>
@@ -625,7 +669,7 @@ function Dashboard() {
 
           {productosAgotados.length === 0 ? (
             <div className="estado-vacio">
-              <p>¡Todos los productos tienen stock disponible!</p>
+              <p>No hay productos activos agotados.</p>
             </div>
           ) : (
             <div className="tabla-responsive">

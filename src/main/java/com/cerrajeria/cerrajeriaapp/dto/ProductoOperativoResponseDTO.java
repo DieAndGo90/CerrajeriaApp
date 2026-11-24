@@ -7,5 +7,6 @@ public record ProductoOperativoResponseDTO(
         Long id,
         String nombre,
         Integer stock,
-        BigDecimal precio
+        BigDecimal precio,
+        boolean activo
 ) {}

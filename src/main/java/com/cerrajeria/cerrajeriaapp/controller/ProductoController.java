@@ -23,8 +23,10 @@ public class ProductoController {
     }
 
     @GetMapping
-    public List<ProductoDTO> listarProductos(){
-        return productoService.listarProductos();
+    public List<ProductoDTO> listarProductos(
+            @RequestParam(required = false) Boolean activo) {
+
+        return productoService.listarProductos(activo);
     }
 
     @PostMapping
@@ -47,6 +49,26 @@ public class ProductoController {
     public  ResponseEntity<ProductoDTO> editarProducto(@PathVariable Long id, @Valid @RequestBody ProductoDTO productoActualizado){
 
         ProductoDTO producto = productoService.editarProducto(id, productoActualizado);
+
+        return ResponseEntity.ok(producto);
+    }
+
+    @PatchMapping("/{id}/activar")
+    public ResponseEntity<ProductoDTO> activarProducto(
+            @PathVariable Long id) {
+
+        ProductoDTO producto =
+                productoService.cambiarEstadoProducto(id, true);
+
+        return ResponseEntity.ok(producto);
+    }
+
+    @PatchMapping("/{id}/desactivar")
+    public ResponseEntity<ProductoDTO> desactivarProducto(
+            @PathVariable Long id) {
+
+        ProductoDTO producto =
+                productoService.cambiarEstadoProducto(id, false);
 
         return ResponseEntity.ok(producto);
     }

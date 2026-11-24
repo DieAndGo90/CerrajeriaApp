@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "../App.css";
+import "./ProductosEstado.css";
 import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
 import { apiFetch } from "../apiFetch";
 
@@ -13,6 +14,10 @@ function Productos() {
   const [idEditando, setIdEditando] = useState(null);
   const [busqueda, setBusqueda] = useState("");
   const [productoAEliminar, setProductoAEliminar] = useState(null);
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+  const [productoADesactivar, setProductoADesactivar] = useState(null);
+  const [idCambiandoEstado, setIdCambiandoEstado] = useState(null);
+  const [errorEstado, setErrorEstado] = useState("");
 
   // ESTADOS DEL FORMULARIO
   const [nombre, setNombre] = useState("");
@@ -23,6 +28,14 @@ function Productos() {
   const [mensaje, setMensaje] = useState("");
   const [exportandoExcel, setExportandoExcel] = useState(false);
   const [errorExportacion, setErrorExportacion] = useState("");
+
+  // El filtro se aplica a los resultados cargados, incluso después de buscar por nombre.
+  // Así mantenemos funcionando el endpoint /productos/buscar sin modificarlo.
+  const productosVisibles = productos.filter((producto) => {
+    if (filtroEstado === "activos") return producto.activo === true;
+    if (filtroEstado === "inactivos") return producto.activo === false;
+    return true;
+  });
 
   // CARGAR PRODUCTOS DEL BACKEND
   useEffect(() => {
@@ -149,6 +162,50 @@ function Productos() {
       });
   };
 
+  // ACTIVAR/DESACTIVAR SIN ELIMINAR EL PRODUCTO NI SU HISTORIAL
+  const cambiarEstadoProducto = async (producto, activar) => {
+    if (idCambiandoEstado !== null) return;
+
+    setIdCambiandoEstado(producto.id);
+    setErrorEstado("");
+    setMensaje("");
+
+    try {
+      const accion = activar ? "activar" : "desactivar";
+      const respuesta = await apiFetch(`${API_URL}/${producto.id}/${accion}`, {
+        method: "PATCH",
+      });
+
+      if (!respuesta.ok) {
+        const datosError = await respuesta.json().catch(() => ({}));
+        throw new Error(
+          datosError.error || `No se pudo ${accion} el producto.`,
+        );
+      }
+
+      const productoActualizado = await respuesta.json();
+
+      setProductos((anteriores) =>
+        anteriores.map((item) =>
+          item.id === productoActualizado.id ? productoActualizado : item,
+        ),
+      );
+      setProductoADesactivar(null);
+      setMensaje(
+        activar
+          ? "Producto activado correctamente."
+          : "Producto desactivado correctamente.",
+      );
+      setTimeout(() => setMensaje(""), 2500);
+    } catch (error) {
+      console.error("Error al cambiar el estado del producto:", error);
+      setProductoADesactivar(null);
+      setErrorEstado(error.message);
+    } finally {
+      setIdCambiandoEstado(null);
+    }
+  };
+
   // BUSCAR PRODUCTOS
   const buscarProductos = (e) => {
     e?.preventDefault();
@@ -253,6 +310,7 @@ function Productos() {
           nombre: producto.nombre,
           stock: cantidad,
           estado: cantidad === 0 ? "Sin stock" : "Disponible",
+          estadoProducto: producto.activo ? "Activo" : "Inactivo",
           costo: tieneCosto ? costoCentavos / 100 : null,
           precio: precioCentavos / 100,
           ganancia:
@@ -286,6 +344,7 @@ function Productos() {
           { header: "Producto", key: "nombre", width: 38 },
           { header: "Stock", key: "stock", width: 12 },
           { header: "Estado stock", key: "estado", width: 18 },
+          { header: "Estado producto", key: "estadoProducto", width: 20 },
           columnaMoneda("Costo unitario", "costo"),
           columnaMoneda("Precio de venta", "precio"),
           columnaMoneda("Ganancia bruta/u.", "ganancia"),
@@ -470,6 +529,13 @@ function Productos() {
         </div>
       )}
 
+      {errorEstado && (
+        <div className="mensaje-error" role="alert">
+          <span>!</span>
+          <p>{errorEstado}</p>
+        </div>
+      )}
+
       <form className="producto-formulario" onSubmit={guardarProducto}>
         <div className="formulario-encabezado">
           <h3>{idEditando ? "Editar producto" : "Nuevo producto"}</h3>
@@ -587,8 +653,8 @@ function Productos() {
             </div>
 
             <span className="tabla-contador">
-              {productos.length}{" "}
-              {productos.length === 1 ? "producto" : "productos"}
+              {productosVisibles.length}{" "}
+              {productosVisibles.length === 1 ? "producto" : "productos"}
             </span>
             <button
               type="button"
@@ -601,16 +667,35 @@ function Productos() {
             </button>
           </div>
 
-          {productos.length === 0 ? (
+          <div className="producto-filtro-estado">
+            <label htmlFor="filtro-estado-productos">Mostrar:</label>
+            <select
+              id="filtro-estado-productos"
+              value={filtroEstado}
+              onChange={(e) => setFiltroEstado(e.target.value)}
+              aria-label="Filtrar productos por estado"
+            >
+              <option value="todos">Todos los productos</option>
+              <option value="activos">Solo activos</option>
+              <option value="inactivos">Solo inactivos</option>
+            </select>
+            <span className="producto-filtro-ayuda">
+              El filtro también se aplica a la búsqueda por nombre.
+            </span>
+          </div>
+
+          {productosVisibles.length === 0 ? (
             <div className="estado-vacio">
               <div className="estado-vacio-icono">⌕</div>
 
               <h3>No se encontraron productos</h3>
 
               <p>
-                {busqueda.trim()
-                  ? `No hay resultados para "${busqueda}".`
-                  : "Todavía no hay productos registrados."}
+                {productos.length > 0
+                  ? "No hay productos que coincidan con el estado seleccionado."
+                  : busqueda.trim()
+                    ? `No hay resultados para "${busqueda}".`
+                    : "Todavía no hay productos registrados."}
               </p>
             </div>
           ) : (
@@ -620,6 +705,7 @@ function Productos() {
                   <tr>
                     <th>ID</th>
                     <th>Nombre</th>
+                    <th>Estado</th>
                     <th>Stock</th>
                     <th>Precio</th>
                     <th>Costo de compra</th>
@@ -630,10 +716,26 @@ function Productos() {
                 </thead>
 
                 <tbody>
-                  {productos.map((producto) => (
-                    <tr key={producto.id}>
+                  {productosVisibles.map((producto) => (
+                    <tr
+                      key={producto.id}
+                      className={
+                        producto.activo ? "" : "producto-fila-inactiva"
+                      }
+                    >
                       <td>{producto.id}</td>
                       <td>{producto.nombre}</td>
+                      <td>
+                        <span
+                          className={`producto-estado-insignia ${
+                            producto.activo
+                              ? "producto-estado-activo"
+                              : "producto-estado-inactivo"
+                          }`}
+                        >
+                          {producto.activo ? "Activo" : "Inactivo"}
+                        </span>
+                      </td>
                       <td>
                         <span
                           className={
@@ -680,6 +782,27 @@ function Productos() {
                           </button>
 
                           <button
+                            type="button"
+                            className={`producto-boton-estado ${
+                              producto.activo
+                                ? "producto-boton-desactivar"
+                                : "producto-boton-activar"
+                            }`}
+                            disabled={idCambiandoEstado !== null}
+                            onClick={() =>
+                              producto.activo
+                                ? setProductoADesactivar(producto)
+                                : cambiarEstadoProducto(producto, true)
+                            }
+                          >
+                            {idCambiandoEstado === producto.id
+                              ? "Guardando..."
+                              : producto.activo
+                                ? "Desactivar"
+                                : "Activar"}
+                          </button>
+
+                          <button
                             className="btn-eliminar"
                             onClick={() => setProductoAEliminar(producto)}
                           >
@@ -695,6 +818,47 @@ function Productos() {
           )}
         </div>
       )}
+      {productoADesactivar && (
+        <div className="modal-overlay">
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Desactivar producto"
+          >
+            <div className="modal-icono">!</div>
+            <h3>Desactivar producto</h3>
+            <p>
+              ¿Querés desactivar <strong>{productoADesactivar.nombre}</strong>?
+            </p>
+            <p className="modal-advertencia">
+              El producto conservará su stock e historial, pero no permitirá
+              registrar nuevas entradas ni salidas hasta que lo reactives.
+            </p>
+            <div className="modal-acciones">
+              <button
+                type="button"
+                className="btn-cancelar"
+                disabled={idCambiandoEstado !== null}
+                onClick={() => setProductoADesactivar(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="producto-boton-estado producto-boton-desactivar"
+                disabled={idCambiandoEstado !== null}
+                onClick={() =>
+                  cambiarEstadoProducto(productoADesactivar, false)
+                }
+              >
+                {idCambiandoEstado !== null ? "Guardando..." : "Sí, desactivar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {productoAEliminar && (
         <div className="modal-overlay">
           <div className="modal">

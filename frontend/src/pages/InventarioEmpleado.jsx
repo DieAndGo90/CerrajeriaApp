@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../apiFetch";
+import "./ProductosEstado.css";
 import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
 
 const API_URL = "http://localhost:8080/operativo/productos";
@@ -12,6 +13,8 @@ export default function InventarioEmpleado() {
   const [guardando, setGuardando] = useState(false);
 
   const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+  const [idCambiandoEstado, setIdCambiandoEstado] = useState(null);
   const [idEditando, setIdEditando] = useState(null);
 
   const [nombre, setNombre] = useState("");
@@ -153,6 +156,50 @@ export default function InventarioEmpleado() {
     }
   }
 
+  // Cambiar el estado usando la API operativa, sin exponer costos.
+  async function cambiarEstadoProducto(producto) {
+    if (idCambiandoEstado !== null || typeof producto.activo !== "boolean")
+      return;
+
+    const activar = !producto.activo;
+    const accion = activar ? "activar" : "desactivar";
+
+    if (
+      !activar &&
+      !window.confirm(
+        `¿Desactivar "${producto.nombre}"? Conservará su stock e historial, pero no admitirá nuevos movimientos.`,
+      )
+    )
+      return;
+
+    setIdCambiandoEstado(producto.id);
+    setError("");
+    setMensaje("");
+
+    try {
+      const respuesta = await apiFetch(`${API_URL}/${producto.id}/${accion}`, {
+        method: "PATCH",
+      });
+
+      if (!respuesta.ok) {
+        const detalle = await respuesta.json().catch(() => ({}));
+        throw new Error(detalle.error || `No se pudo ${accion} el producto.`);
+      }
+
+      const actualizado = await respuesta.json();
+      setProductos((anteriores) =>
+        anteriores.map((p) => (p.id === actualizado.id ? actualizado : p)),
+      );
+      setMensaje(
+        `Producto ${activar ? "activado" : "desactivado"} correctamente.`,
+      );
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIdCambiandoEstado(null);
+    }
+  }
+
   async function exportarInventario() {
     try {
       const libro = crearLibro();
@@ -164,6 +211,7 @@ export default function InventarioEmpleado() {
           { header: "ID", key: "id", width: 12 },
           { header: "Producto", key: "nombre", width: 40 },
           { header: "Stock", key: "stock", width: 15 },
+          { header: "Estado", key: "estado", width: 18 },
           {
             header: "Precio de venta",
             key: "precio",
@@ -175,6 +223,12 @@ export default function InventarioEmpleado() {
           id: p.id,
           nombre: p.nombre,
           stock: p.stock,
+          estado:
+            p.activo === true
+              ? "Activo"
+              : p.activo === false
+                ? "Inactivo"
+                : "Sin informar",
           precio: Number(p.precio),
         })),
       );
@@ -185,9 +239,18 @@ export default function InventarioEmpleado() {
     }
   }
 
-  const productosFiltrados = productos.filter((producto) =>
-    producto.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()),
-  );
+  const productosFiltrados = productos.filter((producto) => {
+    const coincideNombre = producto.nombre
+      .toLowerCase()
+      .includes(busqueda.trim().toLowerCase());
+
+    const coincideEstado =
+      filtroEstado === "todos" ||
+      (filtroEstado === "activos" && producto.activo === true) ||
+      (filtroEstado === "inactivos" && producto.activo === false);
+
+    return coincideNombre && coincideEstado;
+  });
 
   return (
     <main className="contenido-principal">
@@ -306,8 +369,29 @@ export default function InventarioEmpleado() {
           />
         </div>
 
+        <div className="producto-filtro-estado">
+          <label htmlFor="estado-op">Mostrar:</label>
+          <select
+            id="estado-op"
+            value={filtroEstado}
+            onChange={(e) => setFiltroEstado(e.target.value)}
+          >
+            <option value="todos">Todos los productos</option>
+            <option value="activos">Solo activos</option>
+            <option value="inactivos">Solo inactivos</option>
+          </select>
+          <span className="producto-filtro-ayuda">
+            El filtro también se aplica a la búsqueda por nombre.
+          </span>
+        </div>
+
         {cargando ? (
           <p>Cargando productos...</p>
+        ) : productosFiltrados.length === 0 ? (
+          <div className="estado-vacio">
+            <h3>No se encontraron productos</h3>
+            <p>No hay productos que coincidan con los filtros seleccionados.</p>
+          </div>
         ) : (
           <div className="tabla-responsive">
             <table className="productos-tabla">
@@ -315,6 +399,7 @@ export default function InventarioEmpleado() {
                 <tr>
                   <th>ID</th>
                   <th>Nombre</th>
+                  <th>Estado</th>
                   <th>Stock</th>
                   <th>Precio de venta</th>
                   <th>Acciones</th>
@@ -323,9 +408,29 @@ export default function InventarioEmpleado() {
 
               <tbody>
                 {productosFiltrados.map((producto) => (
-                  <tr key={producto.id}>
+                  <tr
+                    key={producto.id}
+                    className={
+                      producto.activo === false ? "producto-fila-inactiva" : ""
+                    }
+                  >
                     <td>{producto.id}</td>
                     <td>{producto.nombre}</td>
+                    <td>
+                      <span
+                        className={`producto-estado-insignia ${
+                          producto.activo === true
+                            ? "producto-estado-activo"
+                            : "producto-estado-inactivo"
+                        }`}
+                      >
+                        {producto.activo === true
+                          ? "Activo"
+                          : producto.activo === false
+                            ? "Inactivo"
+                            : "Sin informar"}
+                      </span>
+                    </td>
                     <td>
                       {producto.stock === 0 ? "Sin stock" : producto.stock}
                     </td>
@@ -343,6 +448,27 @@ export default function InventarioEmpleado() {
                           onClick={() => prepararEdicion(producto)}
                         >
                           Editar
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`producto-boton-estado ${
+                            producto.activo
+                              ? "producto-boton-desactivar"
+                              : "producto-boton-activar"
+                          }`}
+                          disabled={
+                            idCambiandoEstado !== null ||
+                            guardando ||
+                            typeof producto.activo !== "boolean"
+                          }
+                          onClick={() => cambiarEstadoProducto(producto)}
+                        >
+                          {idCambiandoEstado === producto.id
+                            ? "Guardando..."
+                            : producto.activo
+                              ? "Desactivar"
+                              : "Activar"}
                         </button>
 
                         <button

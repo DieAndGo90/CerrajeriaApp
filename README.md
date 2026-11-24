@@ -115,6 +115,41 @@ El valor potencial de venta se obtiene multiplicando el stock por el precio de v
 - Exportación del inventario completo a Excel, independientemente de la búsqueda activa, con información económica exclusiva de ADMIN.
 - Gestión operativa de productos por EMPLEADO mediante una interfaz con ID, nombre, stock y precio de venta, búsqueda y acciones CRUD.
 
+### Activación y desactivación de productos
+
+- Activación y desactivación de productos por ADMIN y EMPLEADO.
+- Persistencia del estado activo/inactivo en MySQL.
+- Creación de productos activos por defecto.
+- Conservación del stock, precios e historial al desactivar.
+- Filtros por estado combinados con búsqueda por nombre.
+- Indicadores visuales de productos activos e inactivos.
+- Confirmación antes de desactivar un producto.
+- Bloqueo de entradas y salidas de productos inactivos desde el backend.
+- Selector de movimientos limitado a productos activos.
+- Conservación del historial de productos inactivos.
+- Indicadores de productos activos e inactivos en el Dashboard.
+- Exclusión de productos inactivos de las alertas de reposición.
+- Inclusión del estado del producto en los reportes Excel.
+- Endpoints administrativos y operativos separados para proteger costos y rentabilidad.
+
+**Endpoints administrativos — ADMIN:**
+
+| Método | Endpoint                     | Descripción         |
+| ------ | ---------------------------- | ------------------- |
+| PATCH  | `/productos/{id}/activar`    | Activar producto    |
+| PATCH  | `/productos/{id}/desactivar` | Desactivar producto |
+| GET    | `/productos?activo=true`     | Listar activos      |
+| GET    | `/productos?activo=false`    | Listar inactivos    |
+
+**Endpoints operativos — ADMIN y EMPLEADO:**
+
+| Método | Endpoint                               | Descripción         |
+| ------ | -------------------------------------- | ------------------- |
+| PATCH  | `/operativo/productos/{id}/activar`    | Activar producto    |
+| PATCH  | `/operativo/productos/{id}/desactivar` | Desactivar producto |
+
+Las operaciones PATCH requieren una sesión autenticada y un token CSRF válido.
+
 ### Gestión de movimientos de stock
 
 - Registrar entradas y salidas de productos.
@@ -232,6 +267,16 @@ Cada producto contiene los siguientes atributos persistidos:
 - `stock`
 - `precio`
 - `costoCompra`
+- `activo`
+
+El atributo `activo` determina si un producto está habilitado para operar. Desactivar un producto no modifica sus existencias ni elimina su historial.
+
+Para actualizar una base de datos existente que todavía no contiene esta columna, ejecutar una sola vez:
+
+```sql
+ALTER TABLE productos
+ADD COLUMN activo BOOLEAN NOT NULL DEFAULT TRUE;
+```
 
 El atributo `precio` representa el precio de venta.
 
@@ -467,6 +512,7 @@ El backend también fue compilado y empaquetado correctamente mediante Maven dur
 - 12.2 — Seguridad del backend: login, sesiones, CSRF y logout.
 - 12.3 — Login y sesión en React, con integración de los módulos.
 - 12.4 — Permisos por rol, API operativa y pantallas para el empleado; pruebas funcionales y de protección de costos.
+- 13 — Activación y desactivación de productos, filtros por estado, indicadores en Dashboard y protección de movimientos de stock.
 
 La aplicación funciona en el entorno local de desarrollo. **Aún no está desplegada en producción** y quedan verificaciones de seguridad y configuración antes de publicarla.
 
@@ -481,8 +527,6 @@ La aplicación funciona en el entorno local de desarrollo. **Aún no está despl
 Las contraseñas **no se escriben en el código fuente ni se incluyen en el README**. Las URLs, permisos CORS y cookies deberán adaptarse antes del despliegue.
 
 ## 🚀 Próximas funcionalidades
-
-**Etapa 13 — Activación y desactivación de productos.** Ambos roles podrán activar y desactivar productos sin perder su historial. Se incorporarán filtros por estado y conteos de productos activos e inactivos al Dashboard administrativo. Se definirán reglas para stock remanente y movimientos sobre productos inactivos.
 
 **Etapa 14 — Stock mínimo y alertas de reposición.** Ambos roles podrán visualizar las alertas y consultar los productos que necesitan reposición.
 

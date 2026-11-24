@@ -35,4 +35,6 @@ public class ProductoDTO {
 
     private BigDecimal margenPorcentaje;
 
+    private boolean activo;
+
 }

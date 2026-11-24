@@ -44,6 +44,16 @@ public class ProductoService {
         return productosDTO;
     }
 
+    public List<ProductoDTO> listarProductos(Boolean activo) {
+
+        return productoRepository.findAll()
+                .stream()
+                .filter(producto ->
+                        activo == null || producto.isActivo() == activo)
+                .map(this::convertirADTO)
+                .toList();
+    }
+
     @Transactional
     public ProductoDTO crearProducto(ProductoDTO productoDTO) {
 
@@ -94,6 +104,20 @@ public class ProductoService {
         if (productoActualizado.getCostoCompra() != null) {
             producto.setCostoCompra(productoActualizado.getCostoCompra());
         }
+
+        Producto productoGuardado = productoRepository.save(producto);
+
+        return convertirADTO(productoGuardado);
+    }
+
+    @Transactional
+    public ProductoDTO cambiarEstadoProducto(Long id, boolean activo) {
+
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() ->
+                        new ProductoNoEncontradoException(id));
+
+        producto.setActivo(activo);
 
         Producto productoGuardado = productoRepository.save(producto);
 
@@ -166,6 +190,7 @@ public class ProductoService {
         dto.setStock(producto.getStock());
         dto.setPrecio(producto.getPrecio());
         dto.setCostoCompra(producto.getCostoCompra());
+        dto.setActivo(producto.isActivo());
         if (producto.getCostoCompra() != null
                 && producto.getPrecio() != null) {
 
@@ -200,6 +225,7 @@ public class ProductoService {
     public List<ProductoStockDTO> listarStock() {
         return productoRepository.findAll()
                 .stream()
+                .filter(Producto::isActivo)
                 .map(producto -> new ProductoStockDTO(
                         producto.getId(),
                         producto.getNombre(),
