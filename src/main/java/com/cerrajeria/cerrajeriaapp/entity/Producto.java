@@ -21,6 +21,9 @@ public class Producto {
 
     private Integer stock;
 
+    @Column(nullable = false)
+    private Integer stockMinimo = 0;
+
     private BigDecimal precio;
 
     private BigDecimal costoCompra;

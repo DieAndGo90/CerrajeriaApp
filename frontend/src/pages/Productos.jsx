@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import "../App.css";
 import "./ProductosEstado.css";
+import { EstadoStock, FiltroStock } from "./StockInventario";
+import { coincideFiltroStock, etiquetaEstadoStock } from "./stockInventarioUtils";
 import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
 import { apiFetch } from "../apiFetch";
 
@@ -22,6 +24,8 @@ function Productos() {
   // ESTADOS DEL FORMULARIO
   const [nombre, setNombre] = useState("");
   const [stock, setStock] = useState("");
+  const [stockMinimo, setStockMinimo] = useState("0");
+  const [filtroStock, setFiltroStock] = useState("todos");
   const [precio, setPrecio] = useState("");
   const [costoCompra, setCostoCompra] = useState("");
 
@@ -32,9 +36,12 @@ function Productos() {
   // El filtro se aplica a los resultados cargados, incluso después de buscar por nombre.
   // Así mantenemos funcionando el endpoint /productos/buscar sin modificarlo.
   const productosVisibles = productos.filter((producto) => {
-    if (filtroEstado === "activos") return producto.activo === true;
-    if (filtroEstado === "inactivos") return producto.activo === false;
-    return true;
+    const coincideEstado =
+      filtroEstado === "todos" ||
+      (filtroEstado === "activos" && producto.activo === true) ||
+      (filtroEstado === "inactivos" && producto.activo === false);
+
+    return coincideEstado && coincideFiltroStock(producto, filtroStock);
   });
 
   // CARGAR PRODUCTOS DEL BACKEND
@@ -58,6 +65,7 @@ function Productos() {
     const producto = {
       nombre: nombre,
       stock: Number(stock),
+      stockMinimo: Number(stockMinimo),
       precio: Number(precio),
       costoCompra: costoCompra === "" ? null : Number(costoCompra),
     };
@@ -115,6 +123,7 @@ function Productos() {
     setIdEditando(producto.id);
     setNombre(producto.nombre);
     setStock(producto.stock);
+    setStockMinimo(String(producto.stockMinimo ?? 0));
     setPrecio(producto.precio);
     setCostoCompra(producto.costoCompra ?? "");
   };
@@ -122,6 +131,7 @@ function Productos() {
   const limpiarFormulario = () => {
     setNombre("");
     setStock("");
+    setStockMinimo("0");
     setPrecio("");
     setCostoCompra("");
     setIdEditando(null);
@@ -309,7 +319,8 @@ function Productos() {
           id: producto.id,
           nombre: producto.nombre,
           stock: cantidad,
-          estado: cantidad === 0 ? "Sin stock" : "Disponible",
+          stockMinimo: producto.stockMinimo ?? 0,
+          estado: etiquetaEstadoStock(producto),
           estadoProducto: producto.activo ? "Activo" : "Inactivo",
           costo: tieneCosto ? costoCentavos / 100 : null,
           precio: precioCentavos / 100,
@@ -343,6 +354,7 @@ function Productos() {
           { header: "ID", key: "id", width: 10 },
           { header: "Producto", key: "nombre", width: 38 },
           { header: "Stock", key: "stock", width: 12 },
+          { header: "Stock mínimo", key: "stockMinimo", width: 16 },
           { header: "Estado stock", key: "estado", width: 18 },
           { header: "Estado producto", key: "estadoProducto", width: 20 },
           columnaMoneda("Costo unitario", "costo"),
@@ -394,8 +406,18 @@ function Productos() {
         },
         {
           indicador: "Productos agotados",
-          valor: filas.filter((fila) => fila.stock === 0).length,
-          detalle: "Productos con stock igual a cero.",
+          valor: filas.filter((fila) => fila.estado === "Sin stock").length,
+          detalle: "Productos activos con stock igual a cero.",
+        },
+        {
+          indicador: "Productos con stock bajo",
+          valor: filas.filter((fila) => fila.estado === "Stock bajo").length,
+          detalle: "Activos con existencias positivas al mínimo o por debajo.",
+        },
+        {
+          indicador: "Alertas de reposición",
+          valor: filas.filter((fila) => ["Stock bajo", "Sin stock"].includes(fila.estado)).length,
+          detalle: "Total de productos activos que requieren reposición.",
         },
         {
           indicador: "Productos con costo registrado",
@@ -489,7 +511,7 @@ function Productos() {
   return (
     <main className="contenido-principal">
       <div className="contenido-header">
-        <h2>Productos</h2>
+        <h2>Inventario</h2>
         <p>Gestión de productos de la cerrajería.</p>
       </div>
 
@@ -575,6 +597,20 @@ function Productos() {
             {idEditando !== null && (
               <small>El stock se modifica desde Movimientos de Stock.</small>
             )}
+          </div>
+
+          <div className="campo-formulario">
+            <label htmlFor="stock-minimo-admin">Stock mínimo</label>
+            <input
+              id="stock-minimo-admin"
+              type="number"
+              min="0"
+              step="1"
+              value={stockMinimo}
+              onChange={(e) => setStockMinimo(e.target.value)}
+              required
+            />
+            <small>Al alcanzar este nivel se genera una alerta.</small>
           </div>
 
           <div className="campo-formulario">
@@ -679,6 +715,7 @@ function Productos() {
               <option value="activos">Solo activos</option>
               <option value="inactivos">Solo inactivos</option>
             </select>
+            <FiltroStock valor={filtroStock} onChange={setFiltroStock} />
             <span className="producto-filtro-ayuda">
               El filtro también se aplica a la búsqueda por nombre.
             </span>
@@ -692,7 +729,7 @@ function Productos() {
 
               <p>
                 {productos.length > 0
-                  ? "No hay productos que coincidan con el estado seleccionado."
+                  ? "No hay productos que coincidan con los filtros seleccionados."
                   : busqueda.trim()
                     ? `No hay resultados para "${busqueda}".`
                     : "Todavía no hay productos registrados."}
@@ -707,6 +744,7 @@ function Productos() {
                     <th>Nombre</th>
                     <th>Estado</th>
                     <th>Stock</th>
+                    <th>Stock mínimo</th>
                     <th>Precio</th>
                     <th>Costo de compra</th>
                     <th>Ganancia bruta</th>
@@ -737,16 +775,9 @@ function Productos() {
                         </span>
                       </td>
                       <td>
-                        <span
-                          className={
-                            producto.stock === 0
-                              ? "stock-badge stock-agotado"
-                              : "stock-badge stock-disponible"
-                          }
-                        >
-                          {producto.stock === 0 ? "Sin stock" : producto.stock}
-                        </span>
+                        <EstadoStock producto={producto} />
                       </td>
+                      <td>{producto.stockMinimo ?? 0}</td>
                       <td>
                         ${Number(producto.precio).toLocaleString("es-AR")}
                       </td>

@@ -24,6 +24,9 @@ public class ProductoDTO {
     @PositiveOrZero(message = "El stock no puede ser negativo")
     private Integer stock;
 
+    @PositiveOrZero(message = "El stock mínimo no puede ser negativo")
+    private Integer stockMinimo;
+
     @NotNull(message = "El precio es obligatorio")
     @Positive(message = "El precio debe ser mayor que 0")
     private BigDecimal precio;

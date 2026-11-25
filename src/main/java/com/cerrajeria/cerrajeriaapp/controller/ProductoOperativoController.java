@@ -95,6 +95,7 @@ public class ProductoOperativoController {
         ProductoDTO dto = new ProductoDTO();
         dto.setNombre(datos.nombre());
         dto.setStock(datos.stock());
+        dto.setStockMinimo(datos.stockMinimo());
         dto.setPrecio(datos.precio());
 
         dto.setCostoCompra(null);
@@ -110,7 +111,17 @@ public class ProductoOperativoController {
                 producto.getNombre(),
                 producto.getStock(),
                 producto.getPrecio(),
-                producto.isActivo()
+                producto.isActivo(),
+                producto.getStockMinimo()
         );
+    }
+
+    @GetMapping("/alertas-stock")
+    public List<ProductoOperativoResponseDTO> listarAlertasStock() {
+
+        return productoService.listarAlertasStock()
+                .stream()
+                .map(this::convertirRespuesta)
+                .toList();
     }
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import InventarioEmpleado from "./InventarioEmpleado";
 import Movimientos from "./Movimientos";
+import { PanelAlertasEmpleado } from "./AlertasInventario";
 
 export default function PanelEmpleado() {
   const [paginaActual, setPaginaActual] = useState("inventario");
@@ -23,11 +24,20 @@ export default function PanelEmpleado() {
         >
           🔄 Movimientos de Stock
         </button>
+        <button
+          type="button"
+          className={paginaActual === "alertas" ? "activo" : ""}
+          onClick={() => setPaginaActual("alertas")}
+        >
+          ⚠ Alertas de inventario
+        </button>
       </nav>
 
       {paginaActual === "inventario" && <InventarioEmpleado />}
 
       {paginaActual === "movimientos" && <Movimientos />}
+
+      {paginaActual === "alertas" && <PanelAlertasEmpleado />}
     </div>
   );
 }

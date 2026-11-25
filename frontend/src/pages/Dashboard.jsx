@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
 import { apiFetch } from "../apiFetch";
+import { AlertasInventario } from "./AlertasInventario";
+import { obtenerEstadoStock } from "./stockInventarioUtils";
 
 function Dashboard() {
   const [totalProductos, setTotalProductos] = useState(0);
@@ -14,7 +16,8 @@ function Dashboard() {
   const [productosSinCosto, setProductosSinCosto] = useState(0);
   const [movimientos, setMovimientos] = useState([]);
   const [movimientosPorMes, setMovimientosPorMes] = useState({});
-  const [productosAgotados, setProductosAgotados] = useState([]);
+  const [alertasStock, setAlertasStock] = useState([]);
+  const [productosStockBajo, setProductosStockBajo] = useState(0);
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState("todos");
   const [cargandoMovimientos, setCargandoMovimientos] = useState(true);
   const [errorMovimientos, setErrorMovimientos] = useState("");
@@ -66,7 +69,11 @@ function Dashboard() {
         );
 
         setProductosSinStock(agotados.length);
-        setProductosAgotados(agotados);
+        const bajo = productos.filter(
+          (producto) => obtenerEstadoStock(producto) === "bajo",
+        );
+        setProductosStockBajo(bajo.length);
+        setAlertasStock([...agotados, ...bajo]);
 
         const valor = productos.reduce((total, producto) => {
           if (producto.costoCompra == null) {
@@ -324,7 +331,7 @@ function Dashboard() {
   return (
     <main className="contenido-principal dashboard-page">
       <div className="contenido-header">
-        <h2>Dashboard</h2>
+        <h2>Panel de control</h2>
         <p>Resumen general de la gestión de la cerrajería.</p>
 
         <button
@@ -344,116 +351,34 @@ function Dashboard() {
       {error && <div className="mensaje-error">{error}</div>}
 
       {!loading && !error && (
-        <div className="dashboard-grid">
-          <div className="tabla-card">
-            <div className="tabla-encabezado">
-              <div>
-                <h3>Productos registrados</h3>
-                <p>Total de productos diferentes en el inventario.</p>
-              </div>
-
-              <span className="tabla-contador">{totalProductos} productos</span>
+        <div className="dashboard-grid indicadores-v14">
+          {[
+            ["📦", "Productos registrados", totalProductos, "Productos diferentes en el inventario.", "azul"],
+            ["✓", "Productos activos", productosActivos, "Habilitados para operar.", "verde"],
+            ["⏸", "Productos inactivos", productosInactivos, "Deshabilitados temporalmente.", "gris"],
+            ["🧰", "Unidades en stock", totalUnidades, "Existencias de todos los productos.", "azul"],
+            ["!", "Productos sin stock", productosSinStock, "Productos activos agotados.", "rojo"],
+            ["⚠", "Productos con stock bajo", productosStockBajo, "Activos al mínimo o por debajo, con stock positivo.", "ambar"],
+            ["💰", "Valor del inventario", valorInventario.toLocaleString("es-AR", { style: "currency", currency: "ARS" }), "Mercadería a costo de compra registrado.", "verde"],
+            ["📈", "Valor potencial de venta", valorPotencialVenta.toLocaleString("es-AR", { style: "currency", currency: "ARS" }), "Existencias a precio de venta; no es facturación.", "azul"],
+          ].map(([icono, titulo, valor, detalle, color]) => (
+            <div className={`tabla-card indicador-v14 indicador-${color}`} key={titulo}>
+              <span className="indicador-icono" aria-hidden="true">{icono}</span>
+              <h3>{titulo}</h3>
+              <strong className="indicador-valor">{valor}</strong>
+              <p>{detalle}</p>
+              {titulo === "Valor del inventario" && (
+                <div className="indicador-cobertura">
+                  <p>{productosSinCosto === 0 ? "Todos los productos tienen costo registrado." : `Valor parcial: ${productosSinCosto} sin costo registrado.`}</p>
+                  <p>Cobertura de costos: {porcentajeCostos}%</p>
+                </div>
+              )}
             </div>
-          </div>
-
-          <div className="tabla-card">
-            <div className="tabla-encabezado">
-              <div>
-                <h3>Productos activos</h3>
-                <p>Productos habilitados para operar.</p>
-              </div>
-
-              <span className="stock-badge stock-disponible">
-                {productosActivos} activos
-              </span>
-            </div>
-          </div>
-
-          <div className="tabla-card">
-            <div className="tabla-encabezado">
-              <div>
-                <h3>Productos inactivos</h3>
-                <p>Productos deshabilitados temporalmente.</p>
-              </div>
-
-              <span
-                className="stock-badge"
-                style={{
-                  backgroundColor: "#fef3c7",
-                  color: "#92400e",
-                }}
-              >
-                {productosInactivos} inactivos
-              </span>
-            </div>
-          </div>
-
-          <div className="tabla-card">
-            <div className="tabla-encabezado">
-              <div>
-                <h3>Unidades en stock</h3>
-                <p>Cantidad total disponible en el inventario.</p>
-              </div>
-
-              <span className="tabla-contador">{totalUnidades} unidades</span>
-            </div>
-          </div>
-
-          <div className="tabla-card">
-            <div className="tabla-encabezado">
-              <div>
-                <h3>Productos sin stock</h3>
-                <p>Productos que necesitan reposición.</p>
-              </div>
-
-              <span className="tabla-contador">
-                {productosSinStock}{" "}
-                {productosSinStock === 1 ? "producto" : "productos"}
-              </span>
-            </div>
-          </div>
-
-          <div className="tabla-card">
-            <div className="tabla-encabezado">
-              <div>
-                <h3>Valor del inventario</h3>
-                <p>Mercadería valorizada a costo de compra registrado.</p>
-              </div>
-
-              <span className="tabla-contador">
-                {valorInventario.toLocaleString("es-AR", {
-                  style: "currency",
-                  currency: "ARS",
-                })}
-              </span>
-
-              <p>
-                {productosSinCosto === 0
-                  ? "Todos los productos tienen costo registrado."
-                  : `Valor parcial: ${productosSinCosto} productos sin costo registrado.`}
-              </p>
-
-              <p>Cobertura de costos: {porcentajeCostos}%</p>
-            </div>
-          </div>
-
-          <div className="tabla-card">
-            <div className="tabla-encabezado">
-              <div>
-                <h3>Valor potencial de venta</h3>
-                <p>Valor de las existencias a precio de venta.</p>
-              </div>
-
-              <span className="tabla-contador">
-                {valorPotencialVenta.toLocaleString("es-AR", {
-                  style: "currency",
-                  currency: "ARS",
-                })}
-              </span>
-            </div>
-          </div>
+          ))}
         </div>
       )}
+
+      {!loading && !error && <AlertasInventario productos={alertasStock} />}
 
       {cargandoMovimientos && <p>Cargando estadísticas de movimientos...</p>}
 
@@ -654,52 +579,7 @@ function Dashboard() {
         </>
       )}
 
-      {!loading && !error && (
-        <section className="tabla-card">
-          <div className="tabla-encabezado">
-            <div>
-              <h3>Alertas de inventario</h3>
-              <p>Productos que necesitan reposición.</p>
-            </div>
 
-            <span className="tabla-contador">
-              {productosAgotados.length} agotados
-            </span>
-          </div>
-
-          {productosAgotados.length === 0 ? (
-            <div className="estado-vacio">
-              <p>No hay productos activos agotados.</p>
-            </div>
-          ) : (
-            <div className="tabla-responsive">
-              <table className="productos-tabla">
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th>Stock actual</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {productosAgotados.map((producto) => (
-                    <tr key={producto.id}>
-                      <td>{producto.nombre}</td>
-                      <td>{producto.stock}</td>
-                      <td>
-                        <span className="stock-badge stock-agotado">
-                          Sin stock
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      )}
     </main>
   );
 }

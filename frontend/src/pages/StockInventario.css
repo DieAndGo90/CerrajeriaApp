@@ -1,0 +1,26 @@
+.inventario-stock-celda {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.inventario-stock-celda strong {
+  font-size: 0.95rem;
+  color: #334155;
+}
+
+.inventario-stock-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.inventario-stock-normal { background: #dcfce7; color: #166534; }
+.inventario-stock-bajo { background: #fef3c7; color: #92400e; }
+.inventario-stock-agotado { background: #fee2e2; color: #991b1b; }
+.inventario-stock-inactivo { background: #e2e8f0; color: #64748b; }

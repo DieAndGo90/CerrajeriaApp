@@ -6,36 +6,26 @@ function Sidebar({ paginaActual, cambiarPagina }) {
         <h1>CerrajeriaApp</h1>
       </div>
 
-      <nav className="sidebar-nav">
-        <button
-          type="button"
+      <nav className="sidebar-nav" aria-label="Menu principal">
+        <p className="sidebar-seccion">Operaciones</p>
+        {[
+          ["productos", "📦", "Inventario"],
+          ["movimientos", "🔄", "Movimientos de stock"],
+          ["precios", "🏷️", "Actualizar precios"],
+        ].map(([id, icono, texto]) => (
+          <button key={id} type="button"
+            className={`nav-item ${paginaActual === id ? "active" : ""}`}
+            aria-current={paginaActual === id ? "page" : undefined}
+            onClick={() => cambiarPagina(id)}>
+            <span aria-hidden="true">{icono}</span> {texto}
+          </button>
+        ))}
+        <p className="sidebar-seccion sidebar-seccion-admin">Administración</p>
+        <button type="button"
           className={`nav-item ${paginaActual === "dashboard" ? "active" : ""}`}
-          onClick={() => cambiarPagina("dashboard")}
-        >
-          Dashboard
-        </button>
-
-        <button
-          type="button"
-          className={`nav-item ${paginaActual === "productos" ? "active" : ""}`}
-          onClick={() => cambiarPagina("productos")}
-        >
-          Productos
-        </button>
-
-        <button
-          type="button"
-          className={`nav-item ${paginaActual === "movimientos" ? "active" : ""}`}
-          onClick={() => cambiarPagina("movimientos")}
-        >
-          Movimientos de Stock
-        </button>
-
-        <button
-          className={`nav-item ${paginaActual === "precios" ? "active" : ""}`}
-          onClick={() => cambiarPagina("precios")}
-        >
-          📈 Actualizar precios
+          aria-current={paginaActual === "dashboard" ? "page" : undefined}
+          onClick={() => cambiarPagina("dashboard")}>
+          <span aria-hidden="true">📊</span> Panel de control
         </button>
       </nav>
     </aside>

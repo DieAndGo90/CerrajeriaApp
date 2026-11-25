@@ -101,6 +101,12 @@ public class ProductoService {
         producto.setNombre(productoActualizado.getNombre());
         producto.setPrecio(productoActualizado.getPrecio());
 
+        if (productoActualizado.getStockMinimo() != null) {
+            producto.setStockMinimo(
+                    productoActualizado.getStockMinimo()
+            );
+        }
+
         if (productoActualizado.getCostoCompra() != null) {
             producto.setCostoCompra(productoActualizado.getCostoCompra());
         }
@@ -188,6 +194,7 @@ public class ProductoService {
         dto.setId(producto.getId());
         dto.setNombre(producto.getNombre());
         dto.setStock(producto.getStock());
+        dto.setStockMinimo(producto.getStockMinimo());
         dto.setPrecio(producto.getPrecio());
         dto.setCostoCompra(producto.getCostoCompra());
         dto.setActivo(producto.isActivo());
@@ -216,6 +223,11 @@ public class ProductoService {
 
         producto.setNombre(dto.getNombre());
         producto.setStock(dto.getStock());
+        producto.setStockMinimo(
+                dto.getStockMinimo() != null
+                        ? dto.getStockMinimo()
+                        : 0
+        );
         producto.setPrecio(dto.getPrecio());
         producto.setCostoCompra(dto.getCostoCompra());
 
@@ -231,6 +243,17 @@ public class ProductoService {
                         producto.getNombre(),
                         producto.getStock()
                 ))
+                .toList();
+    }
+
+    public List<ProductoDTO> listarAlertasStock() {
+
+        return productoRepository.findAll()
+                .stream()
+                .filter(Producto::isActivo)
+                .filter(producto ->
+                        producto.getStock() <= producto.getStockMinimo())
+                .map(this::convertirADTO)
                 .toList();
     }
 

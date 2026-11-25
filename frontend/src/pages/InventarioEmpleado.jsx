@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../apiFetch";
 import "./ProductosEstado.css";
+import { EstadoStock, FiltroStock } from "./StockInventario";
+import { coincideFiltroStock, etiquetaEstadoStock } from "./stockInventarioUtils";
 import { crearLibro, crearHoja, descargarExcel } from "../utils/excel";
 
 const API_URL = "http://localhost:8080/operativo/productos";
@@ -19,6 +21,8 @@ export default function InventarioEmpleado() {
 
   const [nombre, setNombre] = useState("");
   const [stock, setStock] = useState("");
+  const [stockMinimo, setStockMinimo] = useState("0");
+  const [filtroStock, setFiltroStock] = useState("todos");
   const [precio, setPrecio] = useState("");
 
   async function cargarProductos() {
@@ -62,6 +66,7 @@ export default function InventarioEmpleado() {
   function limpiarFormulario() {
     setNombre("");
     setStock("");
+    setStockMinimo("0");
     setPrecio("");
     setIdEditando(null);
   }
@@ -70,6 +75,7 @@ export default function InventarioEmpleado() {
     setIdEditando(producto.id);
     setNombre(producto.nombre);
     setStock(String(producto.stock));
+    setStockMinimo(String(producto.stockMinimo ?? 0));
     setPrecio(String(producto.precio));
     setError("");
     setMensaje("");
@@ -90,6 +96,7 @@ export default function InventarioEmpleado() {
     const datos = {
       nombre: nombre.trim(),
       stock: Number(stock),
+      stockMinimo: Number(stockMinimo),
       precio: Number(precio),
     };
 
@@ -211,7 +218,9 @@ export default function InventarioEmpleado() {
           { header: "ID", key: "id", width: 12 },
           { header: "Producto", key: "nombre", width: 40 },
           { header: "Stock", key: "stock", width: 15 },
-          { header: "Estado", key: "estado", width: 18 },
+          { header: "Estado producto", key: "estado", width: 18 },
+          { header: "Stock mínimo", key: "stockMinimo", width: 16 },
+          { header: "Estado stock", key: "estadoStock", width: 18 },
           {
             header: "Precio de venta",
             key: "precio",
@@ -223,6 +232,8 @@ export default function InventarioEmpleado() {
           id: p.id,
           nombre: p.nombre,
           stock: p.stock,
+          stockMinimo: p.stockMinimo ?? 0,
+          estadoStock: etiquetaEstadoStock(p),
           estado:
             p.activo === true
               ? "Activo"
@@ -249,13 +260,17 @@ export default function InventarioEmpleado() {
       (filtroEstado === "activos" && producto.activo === true) ||
       (filtroEstado === "inactivos" && producto.activo === false);
 
-    return coincideNombre && coincideEstado;
+    return (
+      coincideNombre &&
+      coincideEstado &&
+      coincideFiltroStock(producto, filtroStock)
+    );
   });
 
   return (
     <main className="contenido-principal">
       <div className="contenido-header">
-        <h2>Gestión de productos</h2>
+        <h2>Inventario</h2>
         <p>Inventario y precios de venta.</p>
       </div>
 
@@ -302,6 +317,20 @@ export default function InventarioEmpleado() {
             {idEditando !== null && (
               <small>Modificá el stock desde Movimientos.</small>
             )}
+          </div>
+
+          <div className="campo-formulario">
+            <label htmlFor="stock-minimo-op">Stock mínimo</label>
+            <input
+              id="stock-minimo-op"
+              type="number"
+              min="0"
+              step="1"
+              value={stockMinimo}
+              onChange={(e) => setStockMinimo(e.target.value)}
+              required
+            />
+            <small>Al alcanzar este nivel se genera una alerta.</small>
           </div>
 
           <div className="campo-formulario">
@@ -380,6 +409,7 @@ export default function InventarioEmpleado() {
             <option value="activos">Solo activos</option>
             <option value="inactivos">Solo inactivos</option>
           </select>
+          <FiltroStock valor={filtroStock} onChange={setFiltroStock} />
           <span className="producto-filtro-ayuda">
             El filtro también se aplica a la búsqueda por nombre.
           </span>
@@ -401,6 +431,7 @@ export default function InventarioEmpleado() {
                   <th>Nombre</th>
                   <th>Estado</th>
                   <th>Stock</th>
+                  <th>Stock mínimo</th>
                   <th>Precio de venta</th>
                   <th>Acciones</th>
                 </tr>
@@ -432,8 +463,9 @@ export default function InventarioEmpleado() {
                       </span>
                     </td>
                     <td>
-                      {producto.stock === 0 ? "Sin stock" : producto.stock}
+                      <EstadoStock producto={producto} />
                     </td>
+                    <td>{producto.stockMinimo ?? 0}</td>
                     <td>
                       $
                       {Number(producto.precio).toLocaleString("es-AR", {

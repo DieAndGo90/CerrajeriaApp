@@ -7,7 +7,7 @@ import ActualizacionPrecios from "./pages/ActualizacionPrecios";
 import "./App.css";
 
 function App() {
-  const [paginaActual, setPaginaActual] = useState("dashboard");
+  const [paginaActual, setPaginaActual] = useState("productos");
 
   return (
     <div className="app-layout">

@@ -8,5 +8,6 @@ public record ProductoOperativoResponseDTO(
         String nombre,
         Integer stock,
         BigDecimal precio,
-        boolean activo
+        boolean activo,
+        Integer stockMinimo
 ) {}

@@ -1289,3 +1289,45 @@ input[type="number"]::-webkit-outer-spin-button {
     width: 100%;
   }
 }
+
+
+/* ===== ETAPA 14.6: navegacion e indicadores ===== */
+.sidebar-seccion {
+  color: #a5b4c7;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+  padding: 0 14px;
+}
+.sidebar-seccion-admin {
+  border-top: 1px solid #475569;
+  padding-top: 18px;
+  margin-top: 18px;
+}
+.sidebar-nav .nav-item span { display: inline-block; width: 24px; }
+.dashboard-grid.indicadores-v14 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dashboard-grid.indicadores-v14 .tabla-card::before { display: none; content: none; }
+.dashboard-grid.indicadores-v14 .indicador-v14 {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border-top: 3px solid var(--indicador-color);
+}
+.indicador-azul { --indicador-color: #2563eb; --indicador-fondo: #eff6ff; }
+.indicador-verde { --indicador-color: #15803d; --indicador-fondo: #dcfce7; }
+.indicador-gris { --indicador-color: #64748b; --indicador-fondo: #f1f5f9; }
+.indicador-rojo { --indicador-color: #b91c1c; --indicador-fondo: #fee2e2; }
+.indicador-ambar { --indicador-color: #92400e; --indicador-fondo: #fef3c7; }
+.indicador-icono { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; color: var(--indicador-color); background: var(--indicador-fondo); font-weight: 800; font-size: 20px; }
+.indicador-v14 h3 { margin: 0; font-size: 1rem; color: #1e293b; }
+.indicador-v14 .indicador-valor { font-size: clamp(1.25rem, 1.6vw, 1.75rem); line-height: 1.2; color: var(--indicador-color); overflow-wrap: anywhere; }
+.indicador-v14 p { margin: 0; font-size: .85rem; line-height: 1.4; color: #475569; }
+.indicador-cobertura { border-top: 1px solid #e2e8f0; padding-top: 8px; display: grid; gap: 4px; }
+.productos-tabla .alerta-fila-agotada td:first-child { border-left: 4px solid #dc2626; }
+.productos-tabla .alerta-fila-baja td:first-child { border-left: 4px solid #d97706; }
+.producto-filtro-estado label { white-space: nowrap; }
+@media (max-width: 1200px) { .dashboard-grid.indicadores-v14 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .dashboard-grid.indicadores-v14 { grid-template-columns: 1fr; } }
