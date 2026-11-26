@@ -1,0 +1,15 @@
+package com.cerrajeria.cerrajeriaapp.entity;
+
+public enum TipoAccionAuditoria {
+    INICIO_SESION,
+    CIERRE_SESION,
+    CREAR_PRODUCTO,
+    EDITAR_PRODUCTO,
+    ELIMINAR_PRODUCTO,
+    ACTIVAR_PRODUCTO,
+    DESACTIVAR_PRODUCTO,
+    ENTRADA_STOCK,
+    SALIDA_STOCK,
+    MODIFICAR_STOCK_MINIMO,
+    ACTUALIZAR_PRECIOS
+}

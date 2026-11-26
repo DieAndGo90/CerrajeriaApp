@@ -27,6 +27,12 @@ function Sidebar({ paginaActual, cambiarPagina }) {
           onClick={() => cambiarPagina("dashboard")}>
           <span aria-hidden="true">📊</span> Panel de control
         </button>
+        <button type="button"
+          className={`nav-item ${paginaActual === "auditoria" ? "active" : ""}`}
+          aria-current={paginaActual === "auditoria" ? "page" : undefined}
+          onClick={() => cambiarPagina("auditoria")}>
+          <span aria-hidden="true">📋</span> Auditoría
+        </button>
       </nav>
     </aside>
   );

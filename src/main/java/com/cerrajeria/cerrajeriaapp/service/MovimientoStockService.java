@@ -8,6 +8,10 @@ import com.cerrajeria.cerrajeriaapp.exception.ProductoNoEncontradoException;
 import com.cerrajeria.cerrajeriaapp.repository.MovimientoStockRepository;
 import com.cerrajeria.cerrajeriaapp.repository.ProductoRepository;
 import org.springframework.stereotype.Service;
+import com.cerrajeria.cerrajeriaapp.entity.TipoAccionAuditoria;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -18,13 +22,16 @@ public class MovimientoStockService {
 
     private final MovimientoStockRepository movimientoStockRepository;
     private final ProductoRepository productoRepository;
+    private final AuditoriaService auditoriaService;
 
     public MovimientoStockService(
             MovimientoStockRepository movimientoStockRepository,
-            ProductoRepository productoRepository) {
+            ProductoRepository productoRepository,
+            AuditoriaService auditoriaService) {
 
         this.movimientoStockRepository = movimientoStockRepository;
         this.productoRepository = productoRepository;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional
@@ -51,6 +58,7 @@ public class MovimientoStockService {
             );
         }
         //registrar entrada
+        int stockAnterior = producto.getStock();
         if (tipo == TipoMovimiento.ENTRADA) {
             producto.setStock(producto.getStock() + cantidad);
         }
@@ -76,6 +84,13 @@ public class MovimientoStockService {
         MovimientoStock movimientoGuardado =
                 movimientoStockRepository.save(movimiento);
 
+        auditoriaService.registrar(usuarioActual(),
+                tipo == TipoMovimiento.ENTRADA ? TipoAccionAuditoria.ENTRADA_STOCK : TipoAccionAuditoria.SALIDA_STOCK,
+                productoId, "Producto: " + producto.getNombre()
+                        + "; movimiento ID: " + movimientoGuardado.getId()
+                        + "; cantidad: " + cantidad
+                        + "; stock: " + stockAnterior + " -> " + producto.getStock());
+
         return convertirADTO(movimientoGuardado);
     }
 
@@ -100,6 +115,15 @@ public class MovimientoStockService {
         return movimientos.stream()
                 .map(this::convertirADTO)
                 .toList();
+    }
+
+    private String usuarioActual() {
+        Authentication autenticacion = SecurityContextHolder.getContext().getAuthentication();
+        if (autenticacion == null || !autenticacion.isAuthenticated()
+                || autenticacion instanceof AnonymousAuthenticationToken) {
+            throw new IllegalStateException("No hay un usuario autenticado para auditar");
+        }
+        return autenticacion.getName();
     }
 
     private MovimientoStockResponseDTO convertirADTO(MovimientoStock movimiento) {

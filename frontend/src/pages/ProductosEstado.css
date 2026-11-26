@@ -105,3 +105,25 @@
     width: 100%;
   }
 }
+
+/* Etapa 15: evitar solapamiento de etiquetas en filtros de inventario. */
+.producto-filtro-estado label {
+  width: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.producto-filtro-estado select {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.producto-formulario {
+  scroll-margin-top: 16px;
+}
+
+@media (max-width: 700px) {
+  .producto-filtro-estado select {
+    min-width: 0;
+  }
+}

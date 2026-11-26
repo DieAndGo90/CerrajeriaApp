@@ -1,6 +1,8 @@
 package com.cerrajeria.cerrajeriaapp.config;
 
 import com.cerrajeria.cerrajeriaapp.entity.Usuario;
+import com.cerrajeria.cerrajeriaapp.entity.TipoAccionAuditoria;
+import com.cerrajeria.cerrajeriaapp.service.AuditoriaService;
 import com.cerrajeria.cerrajeriaapp.repository.UsuarioRepository;
 
 import org.springframework.context.annotation.Bean;
@@ -83,7 +85,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
+            HttpSecurity http,
+            AuditoriaService auditoriaService) throws Exception {
 
         http
                 .cors(Customizer.withDefaults())
@@ -130,6 +133,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/movimientos")
                         .hasAnyRole("ADMIN", "EMPLEADO")
 
+                        // Auditoria: solo ADMIN
+                        .requestMatchers(HttpMethod.GET, "/auditoria")
+                        .hasRole("ADMIN")
+
                         // Cualquier otra ruta no autorizada expresamente
                         .anyRequest().denyAll()
                 )
@@ -138,6 +145,9 @@ public class SecurityConfig {
                         .loginProcessingUrl("/auth/login")
 
                         .successHandler((request, response, authentication) -> {
+                            auditoriaService.registrar(authentication.getName(),
+                                    TipoAccionAuditoria.INICIO_SESION, null,
+                                    "Inicio de sesion exitoso");
                             response.setStatus(200);
                         })
 
@@ -150,6 +160,11 @@ public class SecurityConfig {
                         .logoutUrl("/auth/logout")
 
                         .logoutSuccessHandler((request, response, authentication) -> {
+                            if (authentication != null && authentication.isAuthenticated()) {
+                                auditoriaService.registrar(authentication.getName(),
+                                        TipoAccionAuditoria.CIERRE_SESION, null,
+                                        "Cierre de sesion");
+                            }
                             response.setStatus(204);
                         })
                 )

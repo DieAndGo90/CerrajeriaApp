@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "../App.css";
 import "./ProductosEstado.css";
 import { EstadoStock, FiltroStock } from "./StockInventario";
@@ -9,6 +9,7 @@ import { apiFetch } from "../apiFetch";
 const API_URL = "http://localhost:8080/productos";
 
 function Productos() {
+  const formularioProductoRef = useRef(null);
   // ESTADOS DE LOS PRODUCTOS
   const [productos, setProductos] = useState([]);
   const [error, setError] = useState("");
@@ -126,6 +127,12 @@ function Productos() {
     setStockMinimo(String(producto.stockMinimo ?? 0));
     setPrecio(producto.precio);
     setCostoCompra(producto.costoCompra ?? "");
+
+    const reducirMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    formularioProductoRef.current?.scrollIntoView({
+      behavior: reducirMovimiento ? "instant" : "smooth",
+      block: "start",
+    });
   };
 
   const limpiarFormulario = () => {
@@ -558,7 +565,7 @@ function Productos() {
         </div>
       )}
 
-      <form className="producto-formulario" onSubmit={guardarProducto}>
+      <form ref={formularioProductoRef} className="producto-formulario" onSubmit={guardarProducto}>
         <div className="formulario-encabezado">
           <h3>{idEditando ? "Editar producto" : "Nuevo producto"}</h3>
           <p>

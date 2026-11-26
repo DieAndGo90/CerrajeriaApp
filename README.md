@@ -4,7 +4,7 @@ Sistema web de gestión de inventario para una cerrajería, desarrollado como pr
 
 El objetivo es construir una aplicación funcional que permita administrar productos, controlar existencias, registrar movimientos de stock y consultar costos, precios y rentabilidad estimada, aplicando buenas prácticas de desarrollo de software.
 
-Actualmente, CerrajeriaApp incluye un Panel de control administrativo con indicadores de inventario, valorización de mercadería, estadísticas históricas, filtros por período y alertas de productos agotados y con stock bajo. Permite gestionar productos y movimientos de stock, actualizar masivamente los precios de venta y generar reportes Excel. También cuenta con **autenticación mediante Spring Security y permisos diferenciados para ADMIN y EMPLEADO**: el empleado puede operar con productos, precios de venta y movimientos sin acceder a costos, márgenes ni rentabilidad.
+Actualmente, CerrajeriaApp incluye un Panel de control administrativo con indicadores de inventario, valorización de mercadería, estadísticas históricas, filtros por período y alertas de productos agotados y con stock bajo. Permite gestionar productos y movimientos de stock, actualizar masivamente los precios de venta y generar reportes Excel. También cuenta con **autenticación mediante Spring Security y permisos diferenciados para ADMIN y EMPLEADO**: el empleado puede operar con productos, precios de venta y movimientos sin acceder a costos, márgenes ni rentabilidad. La auditoría registra las acciones de ambos roles y permite al administrador consultar y exportar el historial reciente.
 
 ## 🛠️ Tecnologías
 
@@ -60,10 +60,24 @@ Actualmente, CerrajeriaApp incluye un Panel de control administrativo con indica
 | Acceder al Panel de control económico                            |  ✅   |    ❌    |
 | Actualizar masivamente los precios                               |  ✅   |    ❌    |
 | Acceder a los endpoints administrativos de productos             |  ✅   |    ❌    |
+| Consultar, filtrar y exportar la auditoría                       |  ✅   |    ❌    |
 
 El administrador utiliza la interfaz completa de CerrajeriaApp. El empleado utiliza un panel con **Inventario**, **Movimientos de Stock** y **Alertas de inventario**, que muestra solamente los datos necesarios para operar.
 
 La API operativa (`/operativo/productos`) emplea DTO específicos para permitir el CRUD sin exponer ni permitir la asignación de `costoCompra`. Los endpoints administrativos (`/productos`, excepto las consultas de stock autorizadas) permanecen restringidos al administrador. Esta protección se aplica en Spring Boot: ocultar campos en React no es la única medida de seguridad.
+
+### Auditoría de acciones por usuario
+
+- Registro automático de inicios y cierres de sesión, creación, edición y eliminación de productos, activación y desactivación, entradas y salidas de stock, cambios de stock mínimo y actualización masiva de precios.
+- Identificación del usuario mediante Spring Security, sin confiar en un nombre enviado por React.
+- Persistencia de usuario, acción, fecha, ID de producto cuando corresponde y detalle en MySQL.
+- Operaciones de negocio y sus registros de auditoría dentro de la misma transacción; los cambios fallidos no deben dejar registros de éxito.
+- Conservación de registros después de eliminar un producto; el ID se conserva como referencia histórica.
+- Acceso de solo lectura desde la aplicación, exclusivo de ADMIN, protegido en el backend.
+- Interfaz con filtros por usuario, acción, fechas y búsqueda por ID o detalle; validación del rango de fechas.
+- Consulta de hasta los últimos 100 registros, ordenados del más reciente al más antiguo. Los filtros y exportaciones se limitan a los datos cargados; no eliminan los registros antiguos de MySQL.
+- Exportación a Excel del historial cargado o de los resultados filtrados.
+- No se registran contraseñas ni tokens de sesión en la auditoría.
 
 ### Actualización masiva de precios
 
@@ -229,6 +243,12 @@ Los reportes se generan desde React mediante ExcelJS y se descargan como archivo
 - Hoja `Resumen del historial`: fecha de generación, filtros aplicados, cantidad de movimientos y productos involucrados, cantidad de registros de entrada y salida, unidades ingresadas y retiradas, y balance de unidades.
 - Respeta la combinación de filtros por tipo de movimiento y nombre de producto.
 
+**Reporte de auditoría — solo ADMIN:**
+
+- Hoja `Auditoría`: ID del registro, fecha y hora, usuario, acción, ID del producto y detalle.
+- Hoja `Información del reporte`: fecha de generación, alcance, cantidad de registros y filtros aplicados.
+- Exportación de todos los registros cargados o solo de los resultados filtrados, hasta el límite actual de 100 registros recientes.
+
 **Características comunes:**
 
 - Archivos Excel con múltiples hojas, encabezados con estilos, columnas ajustadas, filtros y encabezados congelados.
@@ -257,10 +277,11 @@ Los reportes se generan desde React mediante ExcelJS y se descargan como archivo
 
 ### Interfaz y experiencia de usuario
 
-- Para ADMIN, navegación lateral agrupada en Operaciones (Inventario, Movimientos de stock y Actualizar precios) y Administración (Panel de control). Inventario es la pantalla inicial.
+- Para ADMIN, navegación lateral agrupada en Operaciones (Inventario, Movimientos de stock y Actualizar precios) y Administración (Panel de control y Auditoría). Inventario es la pantalla inicial.
 - Para EMPLEADO, panel propio con Inventario como pantalla inicial, Movimientos de Stock y Alertas de inventario.
 - Interfaz responsive para escritorio y dispositivos móviles.
 - Formularios con validaciones.
+- Desplazamiento suave hasta el formulario al editar un producto y etiquetas de filtros sin ancho fijo en el inventario.
 - Estados de carga y mensajes de error.
 - Tablas de inventario e historial.
 - Tabla administrativa con precio, costo de compra, ganancia bruta y margen porcentual; tabla operativa del empleado sin datos económicos privados.
@@ -328,6 +349,19 @@ Cada usuario contiene:
 
 El hash BCrypt se almacena en la tabla `usuarios`; la contraseña original no se persiste.
 
+### AuditoriaAccion
+
+Cada registro contiene:
+
+- `id`
+- `usuario`
+- `accion` (`TipoAccionAuditoria`)
+- `productoId` (opcional)
+- `detalle`
+- `fecha`
+
+Se persiste en `auditoria_acciones`. El ID de producto es una referencia histórica y no una relación obligatoria con un producto existente. Los registros de sesión y las operaciones globales no necesitan un ID de producto.
+
 ## 🏗️ Arquitectura
 
 El backend utiliza una arquitectura por capas, con **Spring Security** delante de los controladores para autenticar solicitudes, administrar sesiones y comprobar permisos:
@@ -347,8 +381,11 @@ Entre los DTO utilizados se encuentran:
 - `ProductoOperativoRequestDTO` y `ProductoOperativoResponseDTO` (gestión de productos sin costos ni márgenes).
 - `MovimientoStockDTO` y `MovimientoStockResponseDTO`.
 - `ActualizacionPreciosDTO`.
+- `AuditoriaResponseDTO` (lectura del historial de auditoría).
 
 La gestión operativa utiliza `ProductoOperativoController` y reutiliza las reglas de `ProductoService`, sin duplicar el CRUD ni los repositorios. La autorización por roles se centraliza en `SecurityConfig`.
+
+`AuditoriaService` centraliza el registro de acciones y utiliza `AuditoriaRepository`. Los servicios de productos y movimientos registran las operaciones de negocio; los manejadores de Spring Security registran los inicios y cierres de sesión. `AuditoriaController` expone la consulta administrativa.
 
 El manejo global de excepciones de negocio se implementa mediante `GlobalExceptionHandler`. La autenticación y los accesos no autorizados son gestionados por Spring Security, con `UsuarioRepository` y `UserDetailsService`.
 
@@ -408,6 +445,14 @@ Los endpoints operativos devuelven datos limitados por DTO. Un `costoCompra` env
 
 Las operaciones de modificación requieren sesión válida y protección CSRF.
 
+### Auditoría — solo ADMIN
+
+| Método | Endpoint     | Descripción                                            |
+| ------ | ------------ | ------------------------------------------------------ |
+| GET    | `/auditoria` | Consultar hasta los últimos 100 registros de auditoría |
+
+El endpoint requiere una sesión de administrador. EMPLEADO recibe `403 Forbidden` y una solicitud sin autenticación recibe `401 Unauthorized`. No se exponen operaciones de modificación ni eliminación del historial.
+
 ## 📡 Respuestas HTTP
 
 La API utiliza códigos HTTP para comunicar el resultado de las operaciones.
@@ -433,6 +478,7 @@ Tablas principales:
 - `productos`
 - `movimientos_stock`
 - `usuarios`
+- `auditoria_acciones`
 
 La tabla `productos` almacena los datos principales de cada producto, incluyendo su precio de venta y costo de compra.
 
@@ -441,6 +487,8 @@ Los campos de ganancia bruta y margen porcentual no se almacenan en MySQL, ya qu
 La tabla `movimientos_stock` contiene una clave foránea `producto_id` que relaciona cada movimiento con su producto.
 
 Los cambios de stock se ejecutan mediante operaciones transaccionales para mantener la consistencia de los datos. La tabla `usuarios` conserva el nombre de usuario, el hash BCrypt, el rol y el estado de cada cuenta.
+
+La tabla `auditoria_acciones` conserva el historial de actividad de los usuarios, independientemente de la existencia posterior de los productos referenciados.
 
 ## 🧪 Pruebas realizadas
 
@@ -516,15 +564,25 @@ Se verificaron:
 - Envío intencional de `costoCompra` en `POST /operativo/productos`: `201 Created`, respuesta sin costo y comprobación posterior como administrador de que quedó **sin costo registrado**.
 - Eliminación de los productos temporales utilizados en estas pruebas.
 
+### Auditoría de acciones
+
+- Creación de la tabla `auditoria_acciones` y verificación de registros en phpMyAdmin.
+- Inicio y cierre de sesión de ADMIN y EMPLEADO con usuario y fecha correctos.
+- Consulta de `GET /auditoria` como ADMIN (200), EMPLEADO (403) y sin sesión (401).
+- Registro de creación, edición, eliminación, activación, desactivación, movimientos, cambios de stock mínimo y aumento masivo de precios.
+- Visualización del historial y pruebas de filtros, búsqueda, rango de fechas y permisos en React.
+- Pruebas de exportación del historial cargado y resultados filtrados a Excel.
+- Comprobación de las mejoras de filtros y desplazamiento al editar en inventario.
+
 El backend también fue compilado y empaquetado correctamente mediante Maven durante las etapas anteriores.
 
 ## 📌 Estado actual
 
-**Backend MVP:** finalizado y ampliado con movimientos de stock, costos, precios, rentabilidad estimada, actualización masiva de precios, autenticación mediante Spring Security y autorización por roles con una API operativa separada.
+**Backend MVP:** finalizado y ampliado con movimientos de stock, costos, precios, rentabilidad estimada, actualización masiva de precios, autenticación mediante Spring Security, autorización por roles con una API operativa separada y auditoría de acciones.
 
-**Frontend React:** integrado con la API REST, con Panel de control y gestión administrativa, reportes Excel, login/logout y panel operativo de empleado con inventario, precios de venta y movimientos de stock.
+**Frontend React:** integrado con la API REST, con Panel de control, gestión administrativa, reportes Excel, login/logout, módulo de auditoría exclusivo de ADMIN y panel operativo de empleado con inventario, precios de venta y movimientos de stock.
 
-**Base de datos MySQL:** integrada y operativa en desarrollo; incluye productos, movimientos y usuarios.
+**Base de datos MySQL:** integrada y operativa en desarrollo; incluye productos, movimientos, usuarios y registros de auditoría.
 
 **Etapas completadas:**
 
@@ -537,6 +595,7 @@ El backend también fue compilado y empaquetado correctamente mediante Maven dur
 - 12.4 — Permisos por rol, API operativa y pantallas para el empleado; pruebas funcionales y de protección de costos.
 - 13 — Activación y desactivación de productos, filtros por estado, indicadores en el panel y protección de movimientos de stock.
 - 14 — Stock mínimo y alertas de reposición para ambos roles; pulido de navegación, indicadores y reportes.
+- 15 — Auditoría de acciones por usuario, permisos, historial con filtros, exportación a Excel y mejoras de usabilidad del inventario.
 
 La aplicación funciona en el entorno local de desarrollo. **Aún no está desplegada en producción** y quedan verificaciones de seguridad y configuración antes de publicarla.
 
@@ -551,8 +610,6 @@ La aplicación funciona en el entorno local de desarrollo. **Aún no está despl
 Las contraseñas **no se escriben en el código fuente ni se incluyen en el README**. Las URLs, permisos CORS y cookies deberán adaptarse antes del despliegue.
 
 ## 🚀 Próximas funcionalidades
-
-**Etapa 15 — Auditoría de acciones por usuario.** Historial de operaciones con usuario, fecha y detalle; consulta exclusiva del administrador.
 
 **Etapa 16 — Ajustes de inventario.** Corrección de diferencias entre stock registrado y conteo físico, con motivo obligatorio y trazabilidad.
 
@@ -569,6 +626,7 @@ Las contraseñas **no se escriben en el código fuente ni se incluyen en el READ
 - Restringir y probar las operaciones de cada rol tanto en React como directamente contra la API REST.
 - Revisar que las fechas y horas de los reportes coincidan con las del historial, incluyendo formato de 24 horas y zona horaria.
 - Preparar copias de seguridad y una forma de restaurar la base de datos.
+- Evaluar paginación y filtros de auditoría en el backend para consultar registros anteriores al límite de 100, además de definir políticas de conservación, zona horaria y protección del historial en producción.
 - Realizar pruebas adicionales de seguridad y funcionamiento antes de publicar.
 
 ## 🎯 Objetivo del proyecto

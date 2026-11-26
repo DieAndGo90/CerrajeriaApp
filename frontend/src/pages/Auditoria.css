@@ -1,0 +1,37 @@
+/* Etapa 15: estilos exclusivos de Auditoria. */
+.auditoria-page { min-width: 0; }
+.auditoria-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
+.auditoria-encabezado { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.auditoria-encabezado h3 { margin: 0 0 6px; color: #1e293b; }
+.auditoria-encabezado p { margin: 0; color: #64748b; font-size: .88rem; }
+.auditoria-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); align-items: end; gap: 12px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; }
+.auditoria-campo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.auditoria-campo label { width: auto; font-size: .83rem; color: #334155; }
+.auditoria-campo input, .auditoria-campo select { box-sizing: border-box; width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #1e293b; font: inherit; font-size: .85rem; }
+.auditoria-limpiar { min-height: 37px; }
+.auditoria-contador { color: #64748b; font-size: .85rem; margin: 16px 0; }
+.auditoria-tabla-scroll { width: 100%; overflow-x: auto; }
+.auditoria-tabla { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: auto; text-align: left; font-size: .85rem; }
+.auditoria-tabla th { background: #f1f5f9; color: #334155; font-weight: 700; }
+.auditoria-tabla th, .auditoria-tabla td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; text-align: left; }
+.auditoria-tabla tbody tr:hover { background: #f8fafc; }
+.auditoria-fecha { white-space: nowrap; color: #475569; }
+.auditoria-detalle { min-width: 230px; overflow-wrap: anywhere; line-height: 1.5; }
+.auditoria-badge { display: inline-block; padding: 5px 9px; border-radius: 7px; font-size: .78rem; font-weight: 600; }
+.auditoria-positiva { background: #dcfce7; color: #166534; }
+.auditoria-atencion { background: #ffedd5; color: #9a3412; }
+.auditoria-sesion { background: #e2e8f0; color: #334155; }
+.auditoria-cambio { background: #dbeafe; color: #1e40af; }
+.auditoria-vacio, .auditoria-error { padding: 16px; border-radius: 8px; }
+.auditoria-vacio { color: #64748b; background: #f8fafc; }
+.auditoria-error { color: #991b1b; background: #fee2e2; }
+@media (max-width: 600px) { .auditoria-card { padding: 12px; } }
+
+/* Etapa 15.4: exportación Excel de auditoría. */
+.auditoria-acciones-exportar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.auditoria-acciones-exportar button { margin: 0; }
+.auditoria-acciones-exportar button:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 600px) {
+  .auditoria-acciones-exportar { width: 100%; }
+  .auditoria-acciones-exportar button { flex: 1 1 100%; }
+}

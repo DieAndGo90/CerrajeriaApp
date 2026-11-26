@@ -1,0 +1,24 @@
+package com.cerrajeria.cerrajeriaapp.controller;
+
+import com.cerrajeria.cerrajeriaapp.dto.AuditoriaResponseDTO;
+import com.cerrajeria.cerrajeriaapp.service.AuditoriaService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/auditoria")
+public class AuditoriaController {
+    private final AuditoriaService auditoriaService;
+
+    public AuditoriaController(AuditoriaService auditoriaService) {
+        this.auditoriaService = auditoriaService;
+    }
+
+    @GetMapping
+    public List<AuditoriaResponseDTO> listar() {
+        return auditoriaService.listar();
+    }
+}
