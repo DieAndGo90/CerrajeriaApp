@@ -1,6 +1,7 @@
 package com.cerrajeria.cerrajeriaapp.service;
 
 import com.cerrajeria.cerrajeriaapp.dto.MovimientoStockResponseDTO;
+import com.cerrajeria.cerrajeriaapp.dto.AjusteInventarioDTO;
 import com.cerrajeria.cerrajeriaapp.entity.MovimientoStock;
 import com.cerrajeria.cerrajeriaapp.entity.Producto;
 import com.cerrajeria.cerrajeriaapp.entity.TipoMovimiento;
@@ -49,7 +50,7 @@ public class MovimientoStockService {
             throw new IllegalArgumentException("El tipo de movimiento es obligatorio");
         }
 
-        Producto producto = productoRepository.findById(productoId)
+        Producto producto = productoRepository.buscarParaActualizarStock(productoId)
                 .orElseThrow(() -> new ProductoNoEncontradoException(productoId));
         //validar que el producto esté activo
         if (!producto.isActivo()) {
@@ -57,9 +58,44 @@ public class MovimientoStockService {
                     "No se pueden registrar movimientos en un producto inactivo"
             );
         }
-        //registrar entrada
+        return guardarMovimiento(producto, tipo, cantidad, observacion, false);
+    }
+
+    @Transactional
+    public MovimientoStockResponseDTO ajustarInventario(AjusteInventarioDTO dto) {
+        Producto producto = productoRepository.buscarParaActualizarStock(dto.getProductoId())
+                .orElseThrow(() -> new ProductoNoEncontradoException(dto.getProductoId()));
+
+        if (!producto.isActivo()) {
+            throw new IllegalArgumentException("No se puede ajustar un producto inactivo");
+        }
+
+        int stockAnterior = producto.getStock();
+        if (stockAnterior != dto.getStockEsperado()) {
+            throw new IllegalArgumentException("El stock cambio. Actualiza el inventario y vuelve a verificar el conteo.");
+        }
+
+        int diferencia = dto.getStockReal() - stockAnterior;
+        if (diferencia == 0) {
+            throw new IllegalArgumentException("El stock real coincide con el registrado; no hay ajuste");
+        }
+
+        TipoMovimiento tipo = diferencia > 0 ? TipoMovimiento.ENTRADA : TipoMovimiento.SALIDA;
+        String observacion = "AJUSTE DE INVENTARIO | Stock: " + stockAnterior
+                + " -> " + dto.getStockReal() + " | Motivo: " + dto.getMotivo().trim();
+
+        return guardarMovimiento(producto, tipo, Math.abs(diferencia), observacion, true);
+    }
+
+    private MovimientoStockResponseDTO guardarMovimiento(Producto producto,
+            TipoMovimiento tipo, Integer cantidad, String observacion, boolean ajuste) {
+        Long productoId = producto.getId();
+        // Registrar el cambio de stock y el movimiento en la misma transaccion.
         int stockAnterior = producto.getStock();
         if (tipo == TipoMovimiento.ENTRADA) {
+            if (cantidad > Integer.MAX_VALUE - producto.getStock()) {
+                throw new IllegalArgumentException("El stock supera el maximo permitido");
+            }
             producto.setStock(producto.getStock() + cantidad);
         }
 
@@ -85,11 +121,13 @@ public class MovimientoStockService {
                 movimientoStockRepository.save(movimiento);
 
         auditoriaService.registrar(usuarioActual(),
-                tipo == TipoMovimiento.ENTRADA ? TipoAccionAuditoria.ENTRADA_STOCK : TipoAccionAuditoria.SALIDA_STOCK,
+                ajuste ? TipoAccionAuditoria.AJUSTE_INVENTARIO :
+                        (tipo == TipoMovimiento.ENTRADA ? TipoAccionAuditoria.ENTRADA_STOCK : TipoAccionAuditoria.SALIDA_STOCK),
                 productoId, "Producto: " + producto.getNombre()
                         + "; movimiento ID: " + movimientoGuardado.getId()
                         + "; cantidad: " + cantidad
-                        + "; stock: " + stockAnterior + " -> " + producto.getStock());
+                        + "; stock: " + stockAnterior + " -> " + producto.getStock()
+                        + (ajuste ? "; " + observacion : ""));
 
         return convertirADTO(movimientoGuardado);
     }

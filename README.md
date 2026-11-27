@@ -4,7 +4,7 @@ Sistema web de gestión de inventario para una cerrajería, desarrollado como pr
 
 El objetivo es construir una aplicación funcional que permita administrar productos, controlar existencias, registrar movimientos de stock y consultar costos, precios y rentabilidad estimada, aplicando buenas prácticas de desarrollo de software.
 
-Actualmente, CerrajeriaApp incluye un Panel de control administrativo con indicadores de inventario, valorización de mercadería, estadísticas históricas, filtros por período y alertas de productos agotados y con stock bajo. Permite gestionar productos y movimientos de stock, actualizar masivamente los precios de venta y generar reportes Excel. También cuenta con **autenticación mediante Spring Security y permisos diferenciados para ADMIN y EMPLEADO**: el empleado puede operar con productos, precios de venta y movimientos sin acceder a costos, márgenes ni rentabilidad. La auditoría registra las acciones de ambos roles y permite al administrador consultar y exportar el historial reciente.
+Actualmente, CerrajeriaApp incluye un Panel de control administrativo con indicadores de inventario, valorización de mercadería, estadísticas históricas, filtros por período y alertas de productos agotados y con stock bajo. Permite gestionar productos y movimientos de stock, actualizar masivamente los precios de venta y generar reportes Excel. También cuenta con **autenticación mediante Spring Security y permisos diferenciados para ADMIN y EMPLEADO**: el empleado puede operar con productos, precios de venta y movimientos sin acceder a costos, márgenes ni rentabilidad. La auditoría registra las acciones de ambos roles y permite al administrador consultar y exportar el historial reciente. El administrador también puede conciliar el stock registrado con el conteo físico mediante ajustes de inventario con motivo obligatorio y trazabilidad.
 
 ## 🛠️ Tecnologías
 
@@ -55,6 +55,7 @@ Actualmente, CerrajeriaApp incluye un Panel de control administrativo con indica
 | Consultar productos, stock y precios de venta                    |  ✅   |    ✅    |
 | Crear y editar productos; eliminar solo si no tienen movimientos |  ✅   |    ✅    |
 | Registrar y consultar movimientos de stock                       |  ✅   |    ✅    |
+| Realizar ajustes de inventario                                   |  ✅   |    ❌    |
 | Exportar inventario (detalle según rol)                          |  ✅   |    ✅    |
 | Consultar costos, ganancias y márgenes                           |  ✅   |    ❌    |
 | Acceder al Panel de control económico                            |  ✅   |    ❌    |
@@ -68,7 +69,7 @@ La API operativa (`/operativo/productos`) emplea DTO específicos para permitir 
 
 ### Auditoría de acciones por usuario
 
-- Registro automático de inicios y cierres de sesión, creación, edición y eliminación de productos, activación y desactivación, entradas y salidas de stock, cambios de stock mínimo y actualización masiva de precios.
+- Registro automático de inicios y cierres de sesión, creación, edición y eliminación de productos, activación y desactivación, entradas y salidas de stock, cambios de stock mínimo, actualización masiva de precios y ajustes de inventario.
 - Identificación del usuario mediante Spring Security, sin confiar en un nombre enviado por React.
 - Persistencia de usuario, acción, fecha, ID de producto cuando corresponde y detalle en MySQL.
 - Operaciones de negocio y sus registros de auditoría dentro de la misma transacción; los cambios fallidos no deben dejar registros de éxito.
@@ -191,6 +192,20 @@ Las operaciones PATCH requieren una sesión autenticada y un token CSRF válido.
 - Identificar entradas y salidas mediante etiquetas visuales.
 - Exportar el historial a Excel respetando los filtros de tipo y nombre de producto.
 
+### Ajustes de inventario
+
+- Módulo exclusivo de ADMIN para conciliar el stock registrado con las existencias físicas.
+- Selección de productos activos, visualización del stock actual y cálculo de la diferencia antes de confirmar.
+- Motivo obligatorio de hasta 120 caracteres, con opciones predefinidas y posibilidad de indicar otro motivo.
+- Confirmación previa; rechazo de stock negativo, ajustes sin diferencia, productos inactivos y conteos con stock esperado desactualizado.
+- Registro de un movimiento de entrada o salida por la diferencia, con stock anterior, stock resultante y motivo en la observación.
+- Registro de la acción `AJUSTE_INVENTARIO` con el usuario autenticado en la auditoría.
+- Actualización transaccional del stock, movimiento y auditoría, con bloqueo pesimista del producto en las operaciones de stock y `@DynamicUpdate` para reducir sobrescrituras de columnas no modificadas.
+- Historial específico en React con búsqueda por producto o motivo y actualización de datos.
+- Integración con las alertas de reposición, el inventario y el historial general de movimientos.
+
+Los ajustes reutilizan `movimientos_stock` y `auditoria_acciones`, sin crear tablas adicionales. El historial visual identifica los ajustes por el prefijo `AJUSTE DE INVENTARIO |` de la observación; la auditoría registra la acción específica. Las estadísticas de entradas y salidas incluyen estos movimientos y no distinguen todavía su origen.
+
 ### Costos, precios y rentabilidad
 
 - Registrar el costo de compra de cada producto.
@@ -262,6 +277,7 @@ Los reportes se generan desde React mediante ExcelJS y se descargan como archivo
 - No se permiten salidas superiores al stock disponible.
 - El stock no puede quedar negativo mediante los movimientos.
 - Los cambios de stock de productos existentes se realizan mediante movimientos registrados.
+- Los ajustes requieren ADMIN, un producto activo, motivo obligatorio y coincidencia entre el stock esperado y el stock actual; el nuevo stock debe ser no negativo y diferente del registrado.
 - ADMIN puede editar nombre, precio, stock mínimo y costo; EMPLEADO puede editar nombre, precio de venta y stock mínimo, pero no el costo. Ninguno modifica el stock directamente durante la edición.
 - Los productos con movimientos registrados no pueden eliminarse, independientemente del rol.
 - Los productos nuevos con stock inicial positivo generan automáticamente un movimiento de entrada con la observación "Stock inicial".
@@ -277,7 +293,7 @@ Los reportes se generan desde React mediante ExcelJS y se descargan como archivo
 
 ### Interfaz y experiencia de usuario
 
-- Para ADMIN, navegación lateral agrupada en Operaciones (Inventario, Movimientos de stock y Actualizar precios) y Administración (Panel de control y Auditoría). Inventario es la pantalla inicial.
+- Para ADMIN, navegación lateral agrupada en Operaciones (Inventario, Movimientos de stock, Ajustes de inventario y Actualizar precios) y Administración (Panel de control y Auditoría). Inventario es la pantalla inicial.
 - Para EMPLEADO, panel propio con Inventario como pantalla inicial, Movimientos de Stock y Alertas de inventario.
 - Interfaz responsive para escritorio y dispositivos móviles.
 - Formularios con validaciones.
@@ -380,6 +396,7 @@ Entre los DTO utilizados se encuentran:
 - `ProductoStockDTO` (consulta básica de ID, nombre y stock).
 - `ProductoOperativoRequestDTO` y `ProductoOperativoResponseDTO` (gestión de productos sin costos ni márgenes).
 - `MovimientoStockDTO` y `MovimientoStockResponseDTO`.
+- `AjusteInventarioDTO` (producto, stock esperado, stock real y motivo).
 - `ActualizacionPreciosDTO`.
 - `AuditoriaResponseDTO` (lectura del historial de auditoría).
 
@@ -444,6 +461,25 @@ Los endpoints operativos devuelven datos limitados por DTO. Un `costoCompra` env
 | GET    | `/movimientos/producto/{productoId}` | Consultar movimientos de un producto |
 
 Las operaciones de modificación requieren sesión válida y protección CSRF.
+
+### Ajustes de inventario — solo ADMIN
+
+| Método | Endpoint               | Descripción                             |
+| ------ | ---------------------- | --------------------------------------- |
+| POST   | `/movimientos/ajustes` | Conciliar el stock con el conteo físico |
+
+Ejemplo de cuerpo JSON (valores ilustrativos):
+
+```json
+{
+  "productoId": 2,
+  "stockEsperado": 12,
+  "stockReal": 10,
+  "motivo": "Diferencia de conteo físico"
+}
+```
+
+Requiere sesión de ADMIN y token CSRF válido. Devuelve `201 Created` con el movimiento generado; los datos inválidos o el stock esperado desactualizado producen `400 Bad Request`, un producto inexistente produce `404 Not Found` y un EMPLEADO autenticado con CSRF válido recibe `403 Forbidden`.
 
 ### Auditoría — solo ADMIN
 
@@ -574,13 +610,19 @@ Se verificaron:
 - Pruebas de exportación del historial cargado y resultados filtrados a Excel.
 - Comprobación de las mejoras de filtros y desplazamiento al editar en inventario.
 
+### Ajustes de inventario
+
+- Pruebas manuales en Postman: ajustes positivos y negativos, rechazo de stock igual o negativo, motivo vacío, stock esperado desactualizado y producto inactivo; acceso denegado a EMPLEADO y verificación de auditoría.
+- Pruebas manuales en React: cálculo de diferencias, registro de ajustes, historial, actualización del inventario, activación y desaparición de alertas de stock mínimo, movimiento asociado y auditoría con usuario responsable.
+- Validaciones del formulario, cancelación de la confirmación sin modificar el stock y ausencia del módulo en el panel EMPLEADO.
+
 El backend también fue compilado y empaquetado correctamente mediante Maven durante las etapas anteriores.
 
 ## 📌 Estado actual
 
-**Backend MVP:** finalizado y ampliado con movimientos de stock, costos, precios, rentabilidad estimada, actualización masiva de precios, autenticación mediante Spring Security, autorización por roles con una API operativa separada y auditoría de acciones.
+**Backend MVP:** finalizado y ampliado con movimientos de stock, costos, precios, rentabilidad estimada, actualización masiva de precios, autenticación mediante Spring Security, autorización por roles con una API operativa separada y auditoría de acciones y ajustes de inventario.
 
-**Frontend React:** integrado con la API REST, con Panel de control, gestión administrativa, reportes Excel, login/logout, módulo de auditoría exclusivo de ADMIN y panel operativo de empleado con inventario, precios de venta y movimientos de stock.
+**Frontend React:** integrado con la API REST, con Panel de control, gestión administrativa, reportes Excel, login/logout, módulos de auditoría y ajustes de inventario exclusivos de ADMIN y panel operativo de empleado con inventario, precios de venta y movimientos de stock.
 
 **Base de datos MySQL:** integrada y operativa en desarrollo; incluye productos, movimientos, usuarios y registros de auditoría.
 
@@ -596,6 +638,7 @@ El backend también fue compilado y empaquetado correctamente mediante Maven dur
 - 13 — Activación y desactivación de productos, filtros por estado, indicadores en el panel y protección de movimientos de stock.
 - 14 — Stock mínimo y alertas de reposición para ambos roles; pulido de navegación, indicadores y reportes.
 - 15 — Auditoría de acciones por usuario, permisos, historial con filtros, exportación a Excel y mejoras de usabilidad del inventario.
+- 16 — Ajustes de inventario con motivo obligatorio, movimientos, auditoría, permisos de ADMIN, interfaz React y pruebas manuales.
 
 La aplicación funciona en el entorno local de desarrollo. **Aún no está desplegada en producción** y quedan verificaciones de seguridad y configuración antes de publicarla.
 
@@ -610,8 +653,6 @@ La aplicación funciona en el entorno local de desarrollo. **Aún no está despl
 Las contraseñas **no se escriben en el código fuente ni se incluyen en el README**. Las URLs, permisos CORS y cookies deberán adaptarse antes del despliegue.
 
 ## 🚀 Próximas funcionalidades
-
-**Etapa 16 — Ajustes de inventario.** Corrección de diferencias entre stock registrado y conteo físico, con motivo obligatorio y trazabilidad.
 
 **Etapa 17 — Preparación y despliegue.** Configuración de producción, seguridad, respaldo de datos y puesta en línea.
 

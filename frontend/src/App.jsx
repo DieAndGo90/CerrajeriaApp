@@ -5,6 +5,7 @@ import Movimientos from "./pages/Movimientos";
 import Dashboard from "./pages/Dashboard";
 import ActualizacionPrecios from "./pages/ActualizacionPrecios";
 import Auditoria from "./pages/Auditoria";
+import AjustesInventario from "./pages/AjustesInventario";
 import "./App.css";
 
 function App() {
@@ -14,7 +15,9 @@ function App() {
     <div className="app-layout">
       <Sidebar paginaActual={paginaActual} cambiarPagina={setPaginaActual} />
 
-      {paginaActual === "auditoria" ? (
+      {paginaActual === "ajustes" ? (
+        <AjustesInventario />
+      ) : paginaActual === "auditoria" ? (
         <Auditoria />
       ) : paginaActual === "dashboard" ? (
         <Dashboard />

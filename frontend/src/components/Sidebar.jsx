@@ -11,6 +11,7 @@ function Sidebar({ paginaActual, cambiarPagina }) {
         {[
           ["productos", "📦", "Inventario"],
           ["movimientos", "🔄", "Movimientos de stock"],
+          ["ajustes", "📝", "Ajustes de inventario"],
           ["precios", "🏷️", "Actualizar precios"],
         ].map(([id, icono, texto]) => (
           <button key={id} type="button"

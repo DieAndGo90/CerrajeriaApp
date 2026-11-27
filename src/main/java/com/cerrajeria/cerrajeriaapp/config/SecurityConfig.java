@@ -129,6 +129,10 @@ public class SecurityConfig {
                                 "/movimientos/**"
                         ).hasAnyRole("ADMIN", "EMPLEADO")
 
+                        // Ajustes de inventario: solo ADMIN
+                        .requestMatchers(HttpMethod.POST, "/movimientos/ajustes")
+                        .hasRole("ADMIN")
+
                         // Registrar entradas y salidas
                         .requestMatchers(HttpMethod.POST, "/movimientos")
                         .hasAnyRole("ADMIN", "EMPLEADO")

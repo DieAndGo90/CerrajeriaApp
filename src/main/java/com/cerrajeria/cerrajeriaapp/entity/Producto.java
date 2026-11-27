@@ -8,6 +8,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 
 @Entity
+@org.hibernate.annotations.DynamicUpdate
 @Table(name = "productos")
 @Getter @Setter
 @NoArgsConstructor

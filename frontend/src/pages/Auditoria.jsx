@@ -16,6 +16,7 @@ const acciones = {
   SALIDA_STOCK: "Salida de stock",
   MODIFICAR_STOCK_MINIMO: "Modificar stock mínimo",
   ACTUALIZAR_PRECIOS: "Actualización masiva de precios",
+  AJUSTE_INVENTARIO: "Ajuste de inventario",
 };
 
 function mostrarFecha(fecha) {

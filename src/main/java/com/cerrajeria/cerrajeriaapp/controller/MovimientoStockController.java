@@ -1,6 +1,7 @@
 package com.cerrajeria.cerrajeriaapp.controller;
 
 import com.cerrajeria.cerrajeriaapp.dto.MovimientoStockDTO;
+import com.cerrajeria.cerrajeriaapp.dto.AjusteInventarioDTO;
 import com.cerrajeria.cerrajeriaapp.dto.MovimientoStockResponseDTO;
 import com.cerrajeria.cerrajeriaapp.entity.MovimientoStock;
 import com.cerrajeria.cerrajeriaapp.service.MovimientoStockService;
@@ -36,6 +37,13 @@ public class MovimientoStockController {
                 );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(movimiento);
+    }
+
+    @PostMapping("/ajustes")
+    public ResponseEntity<MovimientoStockResponseDTO> ajustarInventario(
+            @Valid @RequestBody AjusteInventarioDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(movimientoStockService.ajustarInventario(dto));
     }
 
     @GetMapping

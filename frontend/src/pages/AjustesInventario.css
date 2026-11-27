@@ -1,0 +1,16 @@
+.ajustes-page { min-width: 0; }
+.ajustes-form { display: grid; gap: 18px; }
+.ajustes-encabezado { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+.ajustes-form .formulario-encabezado { margin: 0; }
+.ajustes-indicadores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.ajuste-indicador { display: grid; gap: 8px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+.ajuste-indicador span { font-size: 13px; color: #475569; }
+.ajuste-indicador strong { font-size: 26px; color: #1e293b; overflow-wrap: anywhere; }
+.ajuste-indicador .ajuste-positivo { color: #15803d; }
+.ajuste-indicador .ajuste-negativo { color: #b91c1c; }
+.ajustes-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.ajustes-aviso { margin: 0; padding: 12px 14px; border: 1px solid #bfdbfe; border-radius: 8px; background: #eff6ff; color: #1e40af; font-size: 13px; }
+.ajustes-form .form-acciones, .ajustes-form .mensaje-exito, .ajustes-form .mensaje-error { margin: 0; }
+.ajustes-page button:disabled { opacity: .55; cursor: not-allowed; }
+.ajustes-page .tabla-encabezado { flex-wrap: wrap; gap: 12px; }
+@media (max-width: 700px) { .ajustes-indicadores, .ajustes-campos { grid-template-columns: 1fr; } }
